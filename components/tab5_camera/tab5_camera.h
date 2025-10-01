@@ -67,6 +67,18 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool capture_frame();
   CameraFrameBuffer *get_frame_buffer();
   void return_frame_buffer();
+  
+  // Nouvelles méthodes pour LVGL
+  bool take_snapshot();
+  bool start_streaming();
+  bool stop_streaming();
+  bool is_streaming() const { return streaming_; }
+  
+  // Accès aux données brutes pour LVGL
+  uint8_t* get_image_data() { return frame_buffer_.buffer; }
+  size_t get_image_size() const { return frame_buffer_.length; }
+  uint16_t get_image_width() const { return frame_buffer_.width; }
+  uint16_t get_image_height() const { return frame_buffer_.height; }
 
  protected:
   // Pins
