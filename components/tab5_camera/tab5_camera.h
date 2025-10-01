@@ -2,59 +2,122 @@
 
 #include "esphome/core/component.h"
 #include "esphome/core/hal.h"
-
-#ifdef USE_ESP32
-
-// Nouvelle API ESP32-P4
-#if __has_include("esp_cam_ctlr_csi.h")
-#include "esp_cam_ctlr_csi.h"
-#include "esp_cam_ctlr.h"
-#include "driver/isp.h"
-#include "esp_cache.h"
-#define HAS_ESP32_P4_CAMERA
-#endif
+#include "esphome/components/i2c/i2c.h"
+#include <vector>
 
 namespace esphome {
 namespace tab5_camera {
 
-class Tab5Camera : public Component {
+// Résolutions supportées par SC202CS
+enum CameraResolution {
+  RESOLUTION_1080P = 0,  // 1920x1080
+  RESOLUTION_720P = 1,   // 1280x720
+  RESOLUTION_VGA = 2,    // 640x480
+  RESOLUTION_QVGA = 3,   // 320x240
+};
+
+// Formats pixel supportés
+enum PixelFormat {
+  PIXEL_FORMAT_RGB565 = 0,
+  PIXEL_FORMAT_YUV422 = 1,
+  PIXEL_FORMAT_RAW8 = 2,
+  PIXEL_FORMAT_JPEG = 3,
+};
+
+// Structures pour la configuration
+struct CameraResolutionInfo {
+  uint16_t width;
+  uint16_t height;
+};
+
+struct CameraFrameBuffer {
+  uint8_t *buffer;
+  size_t length;
+  uint16_t width;
+  uint16_t height;
+  PixelFormat format;
+};
+
+class Tab5Camera : public Component, public i2c::I2CDevice {
  public:
+  Tab5Camera() = default;
+
+  // Setup et loop
   void setup() override;
+  void loop() override;
   void dump_config() override;
-  float get_setup_priority() const override;
-  
-  void set_name(const std::string &name) { this->name_ = name; }
-  void set_external_clock_pin(uint8_t pin) { this->external_clock_pin_ = pin; }
-  void set_external_clock_frequency(uint32_t frequency) { this->external_clock_frequency_ = frequency; }
+  float get_setup_priority() const override { return setup_priority::DATA; }
+
+  // Configuration des pins
+  void set_external_clock_pin(GPIOPin *pin) { this->xclk_pin_ = pin; }
+  void set_external_clock_frequency(uint32_t freq) { this->xclk_frequency_ = freq; }
   void set_reset_pin(GPIOPin *pin) { this->reset_pin_ = pin; }
   
-  bool take_snapshot();
+  // Configuration du capteur
+  void set_sensor_address(uint8_t address) { this->sensor_address_ = address; }
+  void set_name(const std::string &name) { this->name_ = name; }
+  
+  // Configuration de l'image
+  void set_resolution(CameraResolution resolution) { this->resolution_ = resolution; }
+  void set_pixel_format(PixelFormat format) { this->pixel_format_ = format; }
+  void set_jpeg_quality(uint8_t quality) { this->jpeg_quality_ = quality; }
+  void set_framerate(uint8_t fps) { this->framerate_ = fps; }
+
+  // Méthodes publiques pour capturer des images
+  bool capture_frame();
+  CameraFrameBuffer *get_frame_buffer();
+  void return_frame_buffer();
 
  protected:
-#ifdef HAS_ESP32_P4_CAMERA
-  bool init_camera_();
-  void deinit_camera_();
-  
-  static bool camera_get_new_vb_callback(esp_cam_ctlr_handle_t handle, esp_cam_ctlr_trans_t *trans, void *user_data);
-  static bool camera_get_finished_trans_callback(esp_cam_ctlr_handle_t handle, esp_cam_ctlr_trans_t *trans, void *user_data);
-  
-  esp_cam_ctlr_handle_t cam_handle_{nullptr};
-  isp_proc_handle_t isp_proc_{nullptr};
-  void *frame_buffer_{nullptr};
-  size_t frame_buffer_size_{0};
-  bool camera_initialized_{false};
-#endif
-  
-  std::string name_;
-  uint8_t external_clock_pin_{36};
-  uint32_t external_clock_frequency_{20000000}; // 20MHz
+  // Pins
+  GPIOPin *xclk_pin_{nullptr};
   GPIOPin *reset_pin_{nullptr};
+  uint32_t xclk_frequency_{24000000};
+  
+  // Configuration I2C du capteur
+  uint8_t sensor_address_{0x36};
+  std::string name_{"Tab5 Camera"};
+  
+  // Configuration caméra
+  CameraResolution resolution_{RESOLUTION_VGA};
+  PixelFormat pixel_format_{PIXEL_FORMAT_RGB565};
+  uint8_t jpeg_quality_{10};
+  uint8_t framerate_{30};
+  
+  // État interne
+  bool initialized_{false};
+  CameraFrameBuffer frame_buffer_{};
+  
+  // Méthodes privées d'initialisation
+  bool init_camera_();
+  bool init_sc202cs_sensor_();
+  bool configure_sc202cs_();
+  bool start_external_clock_();
+  bool reset_sensor_();
+  
+  // Méthodes de communication I2C avec le capteur
+  bool write_sensor_reg_(uint16_t reg, uint8_t value);
+  bool read_sensor_reg_(uint16_t reg, uint8_t &value);
+  bool write_sensor_regs_(const uint16_t regs[][2], size_t count);
+  
+  // Méthodes de gestion des données
+  CameraResolutionInfo get_resolution_info_();
+  bool allocate_frame_buffer_();
+  void free_frame_buffer_();
+  
+  // Registres SC202CS
+  static constexpr uint16_t SC202CS_CHIP_ID_REG = 0x3107;
+  static constexpr uint16_t SC202CS_CHIP_ID_VALUE = 0xCB1C;
+  static constexpr uint16_t SC202CS_RESET_REG = 0x0103;
+  static constexpr uint16_t SC202CS_SLEEP_REG = 0x0100;
+  
+  // Tables de configuration pour différentes résolutions
+  const uint16_t *get_resolution_config_table_();
+  size_t get_resolution_config_table_size_();
 };
 
 }  // namespace tab5_camera
 }  // namespace esphome
-
-#endif  // USE_ESP32
 
 
 
