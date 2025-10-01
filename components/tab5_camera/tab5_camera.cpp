@@ -239,9 +239,13 @@ bool Tab5Camera::init_sc202cs_sensor_() {
   uint16_t chip_id = (id_high << 8) | id_low;
   ESP_LOGI(TAG, "Chip ID détecté: 0x%04X", chip_id);
   
-  if (chip_id != SC202CS_CHIP_ID_VALUE) {
-    ESP_LOGW(TAG, "Chip ID inattendu (attendu: 0x%04X, reçu: 0x%04X)", 
-             SC202CS_CHIP_ID_VALUE, chip_id);
+  // Accepter SC202CS (0xCB1C) ou SC2356 (0xEB52)
+  if (chip_id != SC202CS_CHIP_ID_VALUE && chip_id != SC2356_CHIP_ID_VALUE) {
+    ESP_LOGW(TAG, "Chip ID inattendu (attendu: 0x%04X ou 0x%04X, reçu: 0x%04X)", 
+             SC202CS_CHIP_ID_VALUE, SC2356_CHIP_ID_VALUE, chip_id);
+  } else {
+    const char* sensor_name = (chip_id == SC202CS_CHIP_ID_VALUE) ? "SC202CS" : "SC2356";
+    ESP_LOGI(TAG, "Capteur détecté: %s", sensor_name);
   }
   
   return true;
@@ -375,10 +379,65 @@ bool Tab5Camera::capture_frame() {
     return false;
   }
   
-  // TODO: Implémenter la capture via DVP/CSI selon le hardware Tab5
-  // Pour l'instant, retourner false
-  ESP_LOGW(TAG, "capture_frame() pas encore implémenté");
-  return false;
+  // TODO: Implémenter la capture via CSI
+  // Pour l'instant, générer un pattern de test
+  ESP_LOGI(TAG, "Génération d'une image de test...");
+  
+  // Créer un pattern de test RGB565
+  uint16_t *pixels = (uint16_t*)this->frame_buffer_.buffer;
+  size_t pixel_count = this->frame_buffer_.width * this->frame_buffer_.height;
+  
+  static uint8_t frame_counter = 0;
+  frame_counter++;
+  
+  for (size_t y = 0; y < this->frame_buffer_.height; y++) {
+    for (size_t x = 0; x < this->frame_buffer_.width; x++) {
+      size_t idx = y * this->frame_buffer_.width + x;
+      
+      // Pattern de test avec dégradé et compteur
+      uint8_t r = (x * 255 / this->frame_buffer_.width) & 0x1F;
+      uint8_t g = ((y + frame_counter) * 255 / this->frame_buffer_.height) & 0x3F;
+      uint8_t b = ((x + y + frame_counter) * 255 / (this->frame_buffer_.width + this->frame_buffer_.height)) & 0x1F;
+      
+      // RGB565 format: RRRR RGGG GGGB BBBB
+      pixels[idx] = (r << 11) | (g << 5) | b;
+    }
+  }
+  
+  ESP_LOGI(TAG, "Image de test générée (frame %d)", frame_counter);
+  return true;
+}
+
+bool Tab5Camera::take_snapshot() {
+  ESP_LOGI(TAG, "Prise d'un snapshot...");
+  return this->capture_frame();
+}
+
+bool Tab5Camera::start_streaming() {
+  if (!this->initialized_) {
+    ESP_LOGE(TAG, "Caméra non initialisée");
+    return false;
+  }
+  
+  if (this->streaming_) {
+    ESP_LOGW(TAG, "Streaming déjà actif");
+    return true;
+  }
+  
+  this->streaming_ = true;
+  ESP_LOGI(TAG, "Streaming démarré");
+  return true;
+}
+
+bool Tab5Camera::stop_streaming() {
+  if (!this->streaming_) {
+    ESP_LOGW(TAG, "Streaming déjà arrêté");
+    return true;
+  }
+  
+  this->streaming_ = false;
+  ESP_LOGI(TAG, "Streaming arrêté");
+  return true;
 }
 
 CameraFrameBuffer *Tab5Camera::get_frame_buffer() {
