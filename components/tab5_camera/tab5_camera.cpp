@@ -1,6 +1,7 @@
 #include "tab5_camera.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
+#include "esphome/core/gpio.h"
 #include <driver/ledc.h>
 
 namespace esphome {
@@ -336,8 +337,16 @@ bool Tab5Camera::start_external_clock_() {
     return false;
   }
   
+  // Obtenir le numéro de pin selon la version d'ESPHome
+  gpio_num_t gpio_num;
+  #ifdef USE_ESP32_VARIANT_ESP32P4
+    gpio_num = (gpio_num_t)this->xclk_pin_->get_pin_number();
+  #else
+    gpio_num = (gpio_num_t)((InternalGPIOPin*)this->xclk_pin_)->get_pin();
+  #endif
+  
   ledc_channel_config_t ledc_channel = {
-      .gpio_num = (int)this->xclk_pin_->get_pin(),
+      .gpio_num = (int)gpio_num,
       .speed_mode = LEDC_LOW_SPEED_MODE,
       .channel = LEDC_CHANNEL_0,
       .intr_type = LEDC_INTR_DISABLE,
@@ -353,7 +362,7 @@ bool Tab5Camera::start_external_clock_() {
   }
   
   ESP_LOGI(TAG, "Clock externe démarré à %u Hz sur GPIO%d", 
-           this->xclk_frequency_, this->xclk_pin_->get_pin());
+           this->xclk_frequency_, gpio_num);
   return true;
 }
 
