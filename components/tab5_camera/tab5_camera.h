@@ -8,7 +8,7 @@
 namespace esphome {
 namespace tab5_camera {
 
-// Résolutions supportées par SC202CS
+// Résolutions supportées par SC202CS/SC2356
 enum CameraResolution {
   RESOLUTION_1080P = 0,  // 1920x1080
   RESOLUTION_720P = 1,   // 1280x720
@@ -72,13 +72,13 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool take_snapshot();
   bool start_streaming();
   bool stop_streaming();
-  bool is_streaming() const { return streaming_; }
+  bool is_streaming() const { return this->streaming_; }
   
   // Accès aux données brutes pour LVGL
-  uint8_t* get_image_data() { return frame_buffer_.buffer; }
-  size_t get_image_size() const { return frame_buffer_.length; }
-  uint16_t get_image_width() const { return frame_buffer_.width; }
-  uint16_t get_image_height() const { return frame_buffer_.height; }
+  uint8_t* get_image_data() { return this->frame_buffer_.buffer; }
+  size_t get_image_size() const { return this->frame_buffer_.length; }
+  uint16_t get_image_width() const { return this->frame_buffer_.width; }
+  uint16_t get_image_height() const { return this->frame_buffer_.height; }
 
  protected:
   // Pins
@@ -98,6 +98,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
   // État interne
   bool initialized_{false};
+  bool streaming_{false};
   CameraFrameBuffer frame_buffer_{};
   
   // Méthodes privées d'initialisation
