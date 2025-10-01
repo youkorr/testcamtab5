@@ -1,88 +1,96 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
-from esphome.components import gpio
+from esphome.components import i2c
 from esphome.const import (
-    CONF_FREQUENCY,
+    CONF_ID,
     CONF_NAME,
-    CONF_RESET_PIN,
+    CONF_FREQUENCY,
 )
-from esphome.pins import gpio_output_pin_schema
+from esphome import pins
 
-DEPENDENCIES = ["esp32"]
 CODEOWNERS = ["@youkorr"]
-
-CONF_EXTERNAL_CLOCK = "external_clock"
-CONF_EXTERNAL_CLOCK_PIN = "external_clock_pin"
-CONF_EXTERNAL_CLOCK_FREQUENCY = "external_clock_frequency"
-CONF_PIN = "pin"
+DEPENDENCIES = ["i2c", "esp32"]
+MULTI_CONF = True
 
 tab5_camera_ns = cg.esphome_ns.namespace("tab5_camera")
-Tab5Camera = tab5_camera_ns.class_("Tab5Camera", cg.Component)
+Tab5Camera = tab5_camera_ns.class_("Tab5Camera", cg.Component, i2c.I2CDevice)
 
-def validate_frequency(value):
-    """Valide la fréquence et la convertit en Hz."""
-    if isinstance(value, str):
-        if value.endswith("MHz"):
-            return int(float(value[:-3]) * 1_000_000)
-        elif value.endswith("kHz"):
-            return int(float(value[:-3]) * 1_000)
-        elif value.endswith("Hz"):
-            return int(float(value[:-2]))
-    return cv.frequency(value)
+# Configuration pour SC202CS
+CONF_RESOLUTION = "resolution"
+CONF_PIXEL_FORMAT = "pixel_format"
+CONF_JPEG_QUALITY = "jpeg_quality"
+CONF_FRAMERATE = "framerate"
+CONF_EXTERNAL_CLOCK_PIN = "external_clock_pin"
+CONF_RESET_PIN = "reset_pin"
+CONF_ADDRESS_SENSOR_SC202CS = "address_sensor_sc202cs"
 
-def validate_pin(value):
-    """Valide un numéro de pin GPIO."""
-    if isinstance(value, str) and value.startswith("GPIO"):
-        return int(value[4:])  # Retire "GPIO" et convertit en int
-    return cv.positive_int(value)
+# Résolutions SC202CS (capteur 2MP)
+CAMERA_RESOLUTIONS = {
+    "1080P": 0,
+    "720P": 1,
+    "VGA": 2,
+    "QVGA": 3,
+}
 
-# Schéma pour external_clock
-EXTERNAL_CLOCK_SCHEMA = cv.Schema({
-    cv.Required(CONF_PIN): validate_pin,
-    cv.Required(CONF_FREQUENCY): validate_frequency,
-})
+# Formats pixel supportés
+PIXEL_FORMATS = {
+    "RGB565": 0,
+    "YUV422": 1,
+    "RAW8": 2,
+    "JPEG": 3,
+}
 
-CONFIG_SCHEMA = cv.Schema({
-    cv.GenerateID(): cv.declare_id(Tab5Camera),
-    cv.Optional(CONF_NAME, default="Tab5 Camera"): cv.string_strict,
-    cv.Optional(CONF_EXTERNAL_CLOCK): EXTERNAL_CLOCK_SCHEMA,
-    cv.Optional(CONF_EXTERNAL_CLOCK_PIN): validate_pin,
-    cv.Optional(CONF_EXTERNAL_CLOCK_FREQUENCY): validate_frequency,
-    cv.Optional(CONF_RESET_PIN): gpio_output_pin_schema,
-}).extend(cv.COMPONENT_SCHEMA)
+CONFIG_SCHEMA = cv.All(
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(Tab5Camera),
+            cv.Optional(CONF_NAME, default="Tab5 Camera"): cv.string,
+            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=36): pins.gpio_output_pin_schema,
+            cv.Optional(CONF_FREQUENCY, default=24000000): cv.int_range(min=6000000, max=40000000),
+            cv.Optional(CONF_RESET_PIN): pins.gpio_output_pin_schema,
+            cv.Optional(CONF_ADDRESS_SENSOR_SC202CS, default=0x36): cv.i2c_address,
+            cv.Optional(CONF_RESOLUTION, default="VGA"): cv.enum(CAMERA_RESOLUTIONS, upper=True),
+            cv.Optional(CONF_PIXEL_FORMAT, default="RGB565"): cv.enum(PIXEL_FORMATS, upper=True),
+            cv.Optional(CONF_JPEG_QUALITY, default=10): cv.int_range(min=1, max=63),
+            cv.Optional(CONF_FRAMERATE, default=30): cv.int_range(min=1, max=60),
+        }
+    )
+    .extend(cv.COMPONENT_SCHEMA)
+    .extend(i2c.i2c_device_schema(0x36))
+)
 
 async def to_code(config):
-    var = cg.new_Pvariable(config[cv.GenerateID()])
+    var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
+    await i2c.register_i2c_device(var, config)
     
-    # Configuration du nom
     cg.add(var.set_name(config[CONF_NAME]))
     
-    # Par défaut, utilise GPIO36 et 20MHz si pas spécifié
-    external_clock_pin = 36
-    external_clock_frequency = 20000000
+    ext_clock_pin = await cg.gpio_pin_expression(config[CONF_EXTERNAL_CLOCK_PIN])
+    cg.add(var.set_external_clock_pin(ext_clock_pin))
+    cg.add(var.set_external_clock_frequency(config[CONF_FREQUENCY]))
     
-    # Configuration external_clock (nouvelle syntaxe)
-    if CONF_EXTERNAL_CLOCK in config:
-        ext_clock = config[CONF_EXTERNAL_CLOCK]
-        external_clock_pin = ext_clock[CONF_PIN]
-        external_clock_frequency = ext_clock[CONF_FREQUENCY]
+    cg.add(var.set_sensor_address(config[CONF_ADDRESS_SENSOR_SC202CS]))
     
-    # Configuration legacy (ancienne syntaxe)
-    if CONF_EXTERNAL_CLOCK_PIN in config:
-        external_clock_pin = config[CONF_EXTERNAL_CLOCK_PIN]
+    cg.add(var.set_resolution(config[CONF_RESOLUTION]))
+    cg.add(var.set_pixel_format(config[CONF_PIXEL_FORMAT]))
+    cg.add(var.set_jpeg_quality(config[CONF_JPEG_QUALITY]))
+    cg.add(var.set_framerate(config[CONF_FRAMERATE]))
     
-    if CONF_EXTERNAL_CLOCK_FREQUENCY in config:
-        external_clock_frequency = config[CONF_EXTERNAL_CLOCK_FREQUENCY]
-    
-    # Applique les configurations
-    cg.add(var.set_external_clock_pin(external_clock_pin))
-    cg.add(var.set_external_clock_frequency(external_clock_frequency))
-    
-    # Configuration du reset pin
     if CONF_RESET_PIN in config:
-        reset_pin = await gpio.gpio_pin_expression(config[CONF_RESET_PIN])
+        reset_pin = await cg.gpio_pin_expression(config[CONF_RESET_PIN])
         cg.add(var.set_reset_pin(reset_pin))
+    
+    # ============================================================
+    # AJOUT CRITIQUE: Configuration pour ESP32-P4 avec ESP-IDF 5.x
+    # ============================================================
+    
+    # Ajouter les flags de compilation nécessaires
+    cg.add_build_flag("-DBOARD_HAS_PSRAM")
+    cg.add_build_flag("-DCONFIG_CAMERA_CORE0=1")
+    cg.add_build_flag("-DCONFIG_CAMERA_SC202CS=1")
+    
+
 
 
 
