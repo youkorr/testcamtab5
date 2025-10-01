@@ -105,9 +105,10 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool allocate_frame_buffer_();
   void free_frame_buffer_();
   
-  // Registres SC202CS
+  // Registres SC202CS / SC2356
   static constexpr uint16_t SC202CS_CHIP_ID_REG = 0x3107;
-  static constexpr uint16_t SC202CS_CHIP_ID_VALUE = 0xCB1C;
+  static constexpr uint16_t SC202CS_CHIP_ID_VALUE = 0xCB1C;  // SC202CS
+  static constexpr uint16_t SC2356_CHIP_ID_VALUE = 0xEB52;   // SC2356
   static constexpr uint16_t SC202CS_RESET_REG = 0x0103;
   static constexpr uint16_t SC202CS_SLEEP_REG = 0x0100;
   
