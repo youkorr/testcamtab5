@@ -24,20 +24,32 @@ CONF_EXTERNAL_CLOCK_PIN = "external_clock_pin"
 CONF_RESET_PIN = "reset_pin"
 CONF_ADDRESS_SENSOR_SC202CS = "address_sensor_sc202cs"
 
-# Résolutions SC202CS (capteur 2MP)
+# Déclarer les enums C++
+CameraResolution = tab5_camera_ns.enum("CameraResolution")
+RESOLUTION_1080P = CameraResolution.RESOLUTION_1080P
+RESOLUTION_720P = CameraResolution.RESOLUTION_720P
+RESOLUTION_VGA = CameraResolution.RESOLUTION_VGA
+RESOLUTION_QVGA = CameraResolution.RESOLUTION_QVGA
+
+PixelFormat = tab5_camera_ns.enum("PixelFormat")
+PIXEL_FORMAT_RGB565 = PixelFormat.PIXEL_FORMAT_RGB565
+PIXEL_FORMAT_YUV422 = PixelFormat.PIXEL_FORMAT_YUV422
+PIXEL_FORMAT_RAW8 = PixelFormat.PIXEL_FORMAT_RAW8
+PIXEL_FORMAT_JPEG = PixelFormat.PIXEL_FORMAT_JPEG
+
+# Mapping pour validation YAML
 CAMERA_RESOLUTIONS = {
-    "1080P": 0,
-    "720P": 1,
-    "VGA": 2,
-    "QVGA": 3,
+    "1080P": RESOLUTION_1080P,
+    "720P": RESOLUTION_720P,
+    "VGA": RESOLUTION_VGA,
+    "QVGA": RESOLUTION_QVGA,
 }
 
-# Formats pixel supportés
 PIXEL_FORMATS = {
-    "RGB565": 0,
-    "YUV422": 1,
-    "RAW8": 2,
-    "JPEG": 3,
+    "RGB565": PIXEL_FORMAT_RGB565,
+    "YUV422": PIXEL_FORMAT_YUV422,
+    "RAW8": PIXEL_FORMAT_RAW8,
+    "JPEG": PIXEL_FORMAT_JPEG,
 }
 
 CONFIG_SCHEMA = cv.All(
@@ -73,12 +85,9 @@ async def to_code(config):
     
     cg.add(var.set_sensor_address(config[CONF_ADDRESS_SENSOR_SC202CS]))
     
-    # Convertir les énumérations en types C++
-    resolution_enum = tab5_camera_ns.enum("CameraResolution")
-    cg.add(var.set_resolution(resolution_enum(config[CONF_RESOLUTION])))
-    
-    pixel_format_enum = tab5_camera_ns.enum("PixelFormat")
-    cg.add(var.set_pixel_format(pixel_format_enum(config[CONF_PIXEL_FORMAT])))
+    # Les valeurs sont déjà des enums C++ grâce à cv.enum()
+    cg.add(var.set_resolution(config[CONF_RESOLUTION]))
+    cg.add(var.set_pixel_format(config[CONF_PIXEL_FORMAT]))
     
     cg.add(var.set_jpeg_quality(config[CONF_JPEG_QUALITY]))
     cg.add(var.set_framerate(config[CONF_FRAMERATE]))
