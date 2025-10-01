@@ -162,10 +162,10 @@ bool Tab5Camera::start_external_clock_() {
   ESP_LOGI(TAG, "Initialisation LEDC sur GPIO%d à %u Hz", gpio_num, this->xclk_frequency_);
   
   // Configuration LEDC pour ESP32-P4
-  // ESP32-P4 nécessite des paramètres spécifiques
+  // L'ESP32-P4 ne supporte que LOW_SPEED_MODE
   ledc_timer_config_t ledc_timer = {};
   ledc_timer.speed_mode = LEDC_LOW_SPEED_MODE;
-  ledc_timer.duty_resolution = LEDC_TIMER_1_BIT;  // 1 bit pour 50% duty cycle
+  ledc_timer.duty_resolution = LEDC_TIMER_1_BIT;  // 1 bit = 50% duty cycle
   ledc_timer.timer_num = LEDC_TIMER_0;
   ledc_timer.freq_hz = this->xclk_frequency_;
   ledc_timer.clk_cfg = LEDC_AUTO_CLK;
@@ -174,23 +174,25 @@ bool Tab5Camera::start_external_clock_() {
   esp_err_t err = ledc_timer_config(&ledc_timer);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "Échec configuration timer LEDC: %d (%s)", err, esp_err_to_name(err));
-    // Essayer avec une configuration alternative
-    ESP_LOGW(TAG, "Tentative avec HIGH_SPEED_MODE...");
-    ledc_timer.speed_mode = LEDC_HIGH_SPEED_MODE;
+    
+    // Essayer avec une fréquence légèrement différente
+    ESP_LOGW(TAG, "Tentative avec résolution 2 bits...");
+    ledc_timer.duty_resolution = LEDC_TIMER_2_BIT;
     err = ledc_timer_config(&ledc_timer);
     if (err != ESP_OK) {
-      ESP_LOGE(TAG, "Échec configuration timer LEDC (HIGH_SPEED): %d (%s)", err, esp_err_to_name(err));
+      ESP_LOGE(TAG, "Échec configuration timer LEDC (2 bits): %d (%s)", err, esp_err_to_name(err));
       return false;
     }
   }
   
   ledc_channel_config_t ledc_channel = {};
   ledc_channel.gpio_num = gpio_num;
-  ledc_channel.speed_mode = ledc_timer.speed_mode;  // Utiliser le même mode que le timer
+  ledc_channel.speed_mode = LEDC_LOW_SPEED_MODE;
   ledc_channel.channel = LEDC_CHANNEL_0;
   ledc_channel.intr_type = LEDC_INTR_DISABLE;
   ledc_channel.timer_sel = LEDC_TIMER_0;
-  ledc_channel.duty = 1;  // 50% duty cycle avec 1 bit de résolution
+  // Duty cycle: 50% pour 1 bit = 1, pour 2 bits = 2
+  ledc_channel.duty = (ledc_timer.duty_resolution == LEDC_TIMER_1_BIT) ? 1 : 2;
   ledc_channel.hpoint = 0;
   ledc_channel.flags.output_invert = 0;
   
@@ -200,8 +202,9 @@ bool Tab5Camera::start_external_clock_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "Clock externe démarré à %u Hz sur GPIO%d", 
-           this->xclk_frequency_, gpio_num);
+  ESP_LOGI(TAG, "Clock externe démarré à %u Hz sur GPIO%d (résolution: %d bits)", 
+           this->xclk_frequency_, gpio_num, 
+           (ledc_timer.duty_resolution == LEDC_TIMER_1_BIT) ? 1 : 2);
   return true;
 }
 
@@ -391,7 +394,6 @@ void Tab5Camera::return_frame_buffer() {
 
 }  // namespace tab5_camera
 }  // namespace esphome
-
 
 
 
