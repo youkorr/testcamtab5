@@ -45,7 +45,7 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(Tab5Camera),
             cv.Optional(CONF_NAME, default="Tab5 Camera"): cv.string,
-            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=36): pins.gpio_output_pin_schema,
+            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=47): pins.gpio_output_pin_schema,
             cv.Optional(CONF_FREQUENCY, default=24000000): cv.int_range(min=6000000, max=40000000),
             cv.Optional(CONF_RESET_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_ADDRESS_SENSOR_SC202CS, default=0x36): cv.i2c_address,
@@ -58,6 +58,7 @@ CONFIG_SCHEMA = cv.All(
     .extend(cv.COMPONENT_SCHEMA)
     .extend(i2c.i2c_device_schema(0x36))
 )
+
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
@@ -81,14 +82,11 @@ async def to_code(config):
         reset_pin = await cg.gpio_pin_expression(config[CONF_RESET_PIN])
         cg.add(var.set_reset_pin(reset_pin))
     
-    # ============================================================
-    # AJOUT CRITIQUE: Configuration pour ESP32-P4 avec ESP-IDF 5.x
-    # ============================================================
-    
-    # Ajouter les flags de compilation nécessaires
+    # Configuration pour ESP32-P4 avec ESP-IDF 5.x
     cg.add_build_flag("-DBOARD_HAS_PSRAM")
     cg.add_build_flag("-DCONFIG_CAMERA_CORE0=1")
     cg.add_build_flag("-DCONFIG_CAMERA_SC202CS=1")
+    cg.add_build_flag("-DUSE_ESP32_VARIANT_ESP32P4")
     
 
 
