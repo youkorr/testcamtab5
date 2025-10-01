@@ -45,7 +45,7 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(Tab5Camera),
             cv.Optional(CONF_NAME, default="Tab5 Camera"): cv.string,
-            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=47): pins.gpio_output_pin_schema,
+            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=36): pins.gpio_output_pin_schema,
             cv.Optional(CONF_FREQUENCY, default=24000000): cv.int_range(min=6000000, max=40000000),
             cv.Optional(CONF_RESET_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_ADDRESS_SENSOR_SC202CS, default=0x36): cv.i2c_address,
@@ -73,8 +73,13 @@ async def to_code(config):
     
     cg.add(var.set_sensor_address(config[CONF_ADDRESS_SENSOR_SC202CS]))
     
-    cg.add(var.set_resolution(config[CONF_RESOLUTION]))
-    cg.add(var.set_pixel_format(config[CONF_PIXEL_FORMAT]))
+    # Convertir les énumérations en types C++
+    resolution_enum = tab5_camera_ns.enum("CameraResolution")
+    cg.add(var.set_resolution(resolution_enum(config[CONF_RESOLUTION])))
+    
+    pixel_format_enum = tab5_camera_ns.enum("PixelFormat")
+    cg.add(var.set_pixel_format(pixel_format_enum(config[CONF_PIXEL_FORMAT])))
+    
     cg.add(var.set_jpeg_quality(config[CONF_JPEG_QUALITY]))
     cg.add(var.set_framerate(config[CONF_FRAMERATE]))
     
