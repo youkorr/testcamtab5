@@ -12,6 +12,7 @@
 #include "../detect/esp_cam_sensor.h"
 #include "..esp_video/private_include/esp_video.h"
 #include "../esp_cam_sensor/sensors/sc202cs/include/sc202cs.h"
+#include "../esp_cam_sensor/sensors/sc202cs/private_include"
 #endif
 
 namespace esphome {
