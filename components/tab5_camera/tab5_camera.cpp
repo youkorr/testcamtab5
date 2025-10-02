@@ -53,9 +53,9 @@ bool Tab5Camera::init_sensor_with_official_driver_() {
   ESP_LOGI(TAG, "Création bus SCCB...");
   
   esp_err_t ret = esp_sccb_new_i2c_io(
-    (i2c_port_t)0,
-    this->sensor_address_,
-    400000,
+    0,                        // I2C port 0 (valeur numérique)
+    this->sensor_address_,    // 0x36
+    400000,                   // 400 kHz
     &this->sccb_handle_
   );
   
