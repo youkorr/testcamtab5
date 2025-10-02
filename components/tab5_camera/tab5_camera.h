@@ -4,13 +4,17 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/i2c/i2c.h"
 
-// Includes officiels ESP-IDF
-#include "esp_cam_sensor.h"
-#include "esp_cam_sensor_detect.h"
+// Headers ESP-IDF pour SCCB (I2C caméra)
+#include "esp_sccb_intf.h"
+#include "esp_sccb_i2c.h"
 
-#ifdef CONFIG_ISP_ENABLED
-#include "esp_cam_ctlr.h"
-#include "esp_cam_ctlr_csi.h"
+// Headers pour le driver caméra (si disponibles)
+#ifdef __has_include("esp_cam_sensor.h")
+#include "esp_cam_sensor.h"
+#endif
+
+#ifdef __has_include("esp_cam_sensor_detect.h")
+#include "esp_cam_sensor_detect.h"
 #endif
 
 namespace esphome {
