@@ -9,6 +9,9 @@
 #ifdef CONFIG_ISP_ENABLED
 #include "esp_cam_ctlr.h"
 #include "esp_cam_ctlr_csi.h"
+#include "../detect/esp_cam_sensor.h"
+#include "..esp_video/private_include/esp_video.h"
+#include "../esp_cam_sensor/sensors/sc202cs/include/sc202cs.h"
 #endif
 
 namespace esphome {
