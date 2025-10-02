@@ -6,7 +6,7 @@
 
 // Headers ESP-IDF pour SCCB (I2C caméra)
 #include "esp_sccb_intf.h"
-#include "esp_sccb_i2c.h"
+
 
 // Headers pour le driver caméra (si disponibles)
 #ifdef __has_include("esp_cam_sensor.h")
