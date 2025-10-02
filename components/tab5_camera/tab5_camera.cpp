@@ -530,13 +530,22 @@ bool Tab5Camera::capture_csi_frame_() {
     return false;
   }
   
+  // Créer une transaction manuelle avec notre buffer
   esp_cam_ctlr_trans_t trans = {};
+  trans.buffer = this->frame_buffer_.buffer;
+  trans.buflen = this->frame_buffer_.length;
+  
+  // Envoyer la transaction au contrôleur
   esp_err_t ret = esp_cam_ctlr_receive(this->cam_ctlr_handle_, &trans, 100);
   
   if (ret == ESP_OK) {
+    ESP_LOGD(TAG, "Frame CSI reçue: %u bytes", trans.received_size);
     return true;
   } else if (ret == ESP_ERR_TIMEOUT) {
-    ESP_LOGV(TAG, "Timeout CSI");
+    ESP_LOGV(TAG, "Timeout CSI - pas de données du capteur");
+    return false;
+  } else if (ret == ESP_ERR_INVALID_ARG) {
+    ESP_LOGE(TAG, "CSI buffer invalide - réinitialisation nécessaire");
     return false;
   } else {
     ESP_LOGW(TAG, "Erreur CSI: %s", esp_err_to_name(ret));
