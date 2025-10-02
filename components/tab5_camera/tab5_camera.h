@@ -5,6 +5,12 @@
 #include "esphome/components/i2c/i2c.h"
 #include <vector>
 
+// Includes CSI pour ESP32-P4
+#ifdef CONFIG_ISP_ENABLED
+#include "esp_cam_ctlr.h"
+#include "esp_cam_ctlr_csi.h"
+#endif
+
 namespace esphome {
 namespace tab5_camera {
 
