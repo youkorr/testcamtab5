@@ -8,7 +8,7 @@
 
 #include <driver/ledc.h>
 #include "esp_sccb_intf.h"
-#include "esp_sccb_i2c.h"
+
 
 namespace esphome {
 namespace tab5_camera {
