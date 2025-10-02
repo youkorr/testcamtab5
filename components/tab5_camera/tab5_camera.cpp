@@ -1,83 +1,4 @@
-bool Tab5Camera::init_csi_interface_() {
-  #ifndef CONFIG_ISP_ENABLED
-  ESP_LOGE(TAG, "CONFIG_ISP_ENABLED=n - CSI impossible");
-  return false;
-  #endif
-  
-  #ifdef CONFIG_ISP_ENABLED
-  
-  ESP_LOGI(TAG, "");
-  ESP_LOGI(TAG, "➤ Étape 1/7: Activation streaming SC202CS...");
-  
-  // Important: Le SC202CS doit être configuré AVANT l'activation streaming
-  // Mettre en standby d'abord
-  if (!this->write_sensor_reg_(0x0100, 0x00)) {
-    ESP_LOGE(TAG, "  ❌ Échec mise en standby");
-    return false;
-  }
-  delay(50);
-  
-  // Activer le streaming
-  if (!this->write_sensor_reg_(0x0100, 0x01)) {
-    ESP_LOGE(TAG, "  ❌ Échec activation streaming (reg 0x0100)");
-    return false;
-  }
-  delay(100);
-  
-  // Vérifier que le capteur stream
-  uint8_t stream_status = 0;
-  if (this->read_sensor_reg_(0x0100, stream_status)) {
-    ESP_LOGI(TAG, "  ✅ SC202CS streaming: 0x%02X", stream_status);
-    if (stream_status != 0x01) {
-      ESP_LOGW(TAG, "  ⚠ Statut streaming inattendu");
-    }
-  }
-  
-  ESP_LOGI(TAG, "➤ Étape 2/7: Configuration CSI pour SC202CS...");
-  
-  CameraResolutionInfo res = this->get_resolution_info_();
-  
-  esp_cam_ctlr_csi_config_t csi_config = {};
-  csi_config.ctlr_id = 0;
-  csi_config.h_res = res.width;
-  csi_config.v_res = res.height;
-  
-  // Configuration spécifique SC202CS selon le driver ESP-IDF
-  // Le SC202CS sort en RAW8 Bayer BGGR
-  if (this->resolution_ == RESOLUTION_VGA) {
-    csi_config.lane_bit_rate_mbps = 200;  // VGA: 200 Mbps
-  } else if (this->resolution_ == RESOLUTION_QVGA) {
-    csi_config.lane_bit_rate_mbps = 100;  // QVGA: 100 Mbps
-  } else {
-    csi_config.lane_bit_rate_mbps = 400;  // Plus grandes résolutions
-  }
-  
-  csi_config.input_data_color_type = MIPI_CSI_COLOR_RAW8;      // SC202CS → RAW8
-  csi_config.output_data_color_type = MIPI_CSI_COLOR_RGB565;   // ISP → RGB565
-  csi_config.data_lane_num = 1;  // SC202CS utilise 1 lane
-  csi_config.byte_swap_en = false;
-  csi_config.queue_items = 1;
-  csi_config.bayer_type = ISP_COLOR_BGGR;  // SC202CS = Bayer BGGR
-  
-  ESP_LOGI(TAG, "  • Capteur: SC202CS (PID: 0xEB52)");
-  ESP_LOGI(TAG, "  • Résolution: %ux%u", res.width, res.height);
-  ESP_LOGI(TAG, "  • Lanes: %d @ %d Mbps", csi_config.data_lane_num, csi_config.lane_bit_rate_mbps);
-  ESP_LOGI(TAG, "  • Format: RAW8 (BGGR) → RGB565");
-  
-  ESP_LOGI(TAG, "➤ Étape 3/7: Création contrôleur CSI...");
-  esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->cam_ctlr_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "  ❌ esp_cam_new_csi_ctlr(): %s", esp_err_to_name(ret));
-    ESP_LOGE(TAG, "");
-    ESP_LOGE(TAG, "Causes possibles:");
-    ESP_LOGE(TAG, "  1. CONFIG_MIPI_CSI_ENABLED=n");
-    ESP_LOGE(TAG, "  2. Pins CSI incorrects");
-    ESP_LOGE(TAG, "  3. Paramètres incompatibles");
-    return false;
-  }
-  ESP_LOGI(TAG, "  ✅ Contrôleur créé");
-  
-  ESP_LOGI(TAG, "#include "tab5_camera.h"
+#include "tab5_camera.h"
 #include "esphome/core/log.h"
 #include "esphome/core/hal.h"
 
@@ -92,7 +13,7 @@ namespace tab5_camera {
 
 static const char *const TAG = "tab5_camera";
 
-// Tables de configuration SC202CS pour différentes résolutions
+// Configuration VGA (640x480)
 static const uint16_t SC202CS_VGA_REGS[][2] = {
     {0x0103, 0x01}, {0x0100, 0x00}, {0x36e9, 0x80}, {0x37f9, 0x80},
     {0x3200, 0x01}, {0x3201, 0x48}, {0x3202, 0x01}, {0x3203, 0x38},
@@ -100,9 +21,10 @@ static const uint16_t SC202CS_VGA_REGS[][2] = {
     {0x3208, 0x02}, {0x3209, 0x80}, {0x320a, 0x01}, {0x320b, 0xe0},
     {0x320c, 0x04}, {0x320d, 0x4c}, {0x320e, 0x02}, {0x320f, 0x08},
     {0x3301, 0x06}, {0x3304, 0x50}, {0x3630, 0xf0}, {0x4837, 0x1e},
-    {0x0100, 0x00},  // NE PAS démarrer automatiquement
+    {0x0100, 0x00},
 };
 
+// Configuration QVGA (320x240)
 static const uint16_t SC202CS_QVGA_REGS[][2] = {
     {0x0103, 0x01}, {0x0100, 0x00}, {0x36e9, 0x80}, {0x37f9, 0x80},
     {0x3200, 0x01}, {0x3201, 0x48}, {0x3202, 0x01}, {0x3203, 0x38},
@@ -122,14 +44,7 @@ void Tab5Camera::setup() {
   ESP_LOGE(TAG, "");
   ESP_LOGE(TAG, "██████████████████████████████████████████████████");
   ESP_LOGE(TAG, "█  ERREUR CRITIQUE: CONFIG_ISP_ENABLED=n        █");
-  ESP_LOGE(TAG, "█  La caméra CSI ne peut PAS fonctionner        █");
-  ESP_LOGE(TAG, "█  sans CONFIG_ISP_ENABLED=y                    █");
   ESP_LOGE(TAG, "██████████████████████████████████████████████████");
-  ESP_LOGE(TAG, "");
-  ESP_LOGE(TAG, "SOLUTION: Créer sdkconfig.defaults avec:");
-  ESP_LOGE(TAG, "  CONFIG_ISP_ENABLED=y");
-  ESP_LOGE(TAG, "  CONFIG_MIPI_CSI_ENABLED=y");
-  ESP_LOGE(TAG, "");
   this->mark_failed();
   return;
   #endif
@@ -152,10 +67,6 @@ void Tab5Camera::setup() {
   
   if (!this->init_sc202cs_sensor_()) {
     ESP_LOGE(TAG, "❌ ÉCHEC: Init capteur SC202CS");
-    ESP_LOGE(TAG, "Vérifiez:");
-    ESP_LOGE(TAG, "  - Connexion I2C (SDA/SCL)");
-    ESP_LOGE(TAG, "  - Adresse I2C: 0x36");
-    ESP_LOGE(TAG, "  - Alimentation capteur");
     this->mark_failed();
     return;
   }
@@ -266,7 +177,6 @@ bool Tab5Camera::reset_sensor_() {
 bool Tab5Camera::init_sc202cs_sensor_() {
   uint8_t id_high, id_low;
   
-  // Lire PID (Product ID) sur registres 0x3107 et 0x3108
   if (!this->read_sensor_reg_(0x3107, id_high)) {
     ESP_LOGE(TAG, "Impossible de lire registre 0x3107");
     return false;
@@ -377,7 +287,7 @@ CameraResolutionInfo Tab5Camera::get_resolution_info_() {
 
 bool Tab5Camera::allocate_frame_buffer_() {
   CameraResolutionInfo res_info = this->get_resolution_info_();
-  size_t buffer_size = res_info.width * res_info.height * 2;  // RGB565 = 2 bytes/pixel
+  size_t buffer_size = res_info.width * res_info.height * 2;
   
   this->frame_buffer_.buffer = (uint8_t *)malloc(buffer_size);
   if (this->frame_buffer_.buffer == nullptr) {
@@ -385,7 +295,6 @@ bool Tab5Camera::allocate_frame_buffer_() {
     return false;
   }
   
-  // Remplir de noir au début
   memset(this->frame_buffer_.buffer, 0, buffer_size);
   
   this->frame_buffer_.length = buffer_size;
@@ -411,7 +320,6 @@ bool Tab5Camera::capture_frame() {
     return false;
   }
   
-  // TOUJOURS essayer CSI d'abord
   if (!this->csi_initialized_) {
     ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "╔════════════════════════════════════════════╗");
@@ -422,13 +330,11 @@ bool Tab5Camera::capture_frame() {
       ESP_LOGE(TAG, "");
       ESP_LOGE(TAG, "██████████████████████████████████████████████");
       ESP_LOGE(TAG, "█  ÉCHEC INITIALISATION CSI                 █");
-      ESP_LOGE(TAG, "█  Impossible d'obtenir l'image réelle      █");
       ESP_LOGE(TAG, "██████████████████████████████████████████████");
       return false;
     }
   }
   
-  // Capturer via CSI - PAS DE FALLBACK
   return this->capture_csi_frame_();
 }
 
@@ -440,23 +346,26 @@ bool Tab5Camera::init_csi_interface_() {
   
   #ifdef CONFIG_ISP_ENABLED
   
-  ESP_LOGI(TAG, "");
-  ESP_LOGI(TAG, "➤ Étape 1/7: Activation streaming capteur...");
+  ESP_LOGI(TAG, "➤ Étape 1/7: Activation streaming SC202CS...");
   
-  // Activer le capteur en mode streaming
+  if (!this->write_sensor_reg_(0x0100, 0x00)) {
+    ESP_LOGE(TAG, "  ❌ Échec mise en standby");
+    return false;
+  }
+  delay(50);
+  
   if (!this->write_sensor_reg_(0x0100, 0x01)) {
-    ESP_LOGE(TAG, "  ❌ Échec activation capteur (reg 0x0100)");
+    ESP_LOGE(TAG, "  ❌ Échec activation streaming");
     return false;
   }
   delay(100);
   
-  // Vérifier que le capteur stream bien
   uint8_t stream_status = 0;
   if (this->read_sensor_reg_(0x0100, stream_status)) {
-    ESP_LOGI(TAG, "  ✅ Capteur streaming: 0x%02X", stream_status);
+    ESP_LOGI(TAG, "  ✅ SC202CS streaming: 0x%02X", stream_status);
   }
   
-  ESP_LOGI(TAG, "➤ Étape 2/7: Configuration CSI...");
+  ESP_LOGI(TAG, "➤ Étape 2/7: Configuration CSI pour SC202CS...");
   
   CameraResolutionInfo res = this->get_resolution_info_();
   
@@ -464,28 +373,28 @@ bool Tab5Camera::init_csi_interface_() {
   csi_config.ctlr_id = 0;
   csi_config.h_res = res.width;
   csi_config.v_res = res.height;
-  csi_config.lane_bit_rate_mbps = 200;  // Faible pour VGA/QVGA
   csi_config.input_data_color_type = MIPI_CSI_COLOR_RAW8;
   csi_config.output_data_color_type = MIPI_CSI_COLOR_RGB565;
-  csi_config.data_lane_num = 1;  // COMMENCER AVEC 1 LANE
+  csi_config.data_lane_num = 1;
   csi_config.byte_swap_en = false;
   csi_config.queue_items = 1;
   csi_config.bayer_type = ISP_COLOR_BGGR;
   
+  if (this->resolution_ == RESOLUTION_VGA || this->resolution_ == RESOLUTION_QVGA) {
+    csi_config.lane_bit_rate_mbps = 400;
+  } else {
+    csi_config.lane_bit_rate_mbps = 576;
+  }
+  
+  ESP_LOGI(TAG, "  CONFIG OFFICIELLE SC202CS (PID: 0xEB52):");
   ESP_LOGI(TAG, "  • Résolution: %ux%u", res.width, res.height);
-  ESP_LOGI(TAG, "  • Lanes: %d @ %d Mbps", csi_config.data_lane_num, csi_config.lane_bit_rate_mbps);
-  ESP_LOGI(TAG, "  • Format: RAW8 → RGB565");
-  ESP_LOGI(TAG, "  • Bayer: BGGR");
+  ESP_LOGI(TAG, "  • MIPI: 1 lane @ %d Mbps", csi_config.lane_bit_rate_mbps);
+  ESP_LOGI(TAG, "  • Format: RAW8 BGGR → RGB565");
   
   ESP_LOGI(TAG, "➤ Étape 3/7: Création contrôleur CSI...");
   esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->cam_ctlr_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "  ❌ esp_cam_new_csi_ctlr(): %s", esp_err_to_name(ret));
-    ESP_LOGE(TAG, "");
-    ESP_LOGE(TAG, "Causes possibles:");
-    ESP_LOGE(TAG, "  1. CONFIG_MIPI_CSI_ENABLED=n");
-    ESP_LOGE(TAG, "  2. Pins CSI mal configurés");
-    ESP_LOGE(TAG, "  3. Paramètres CSI incompatibles");
     return false;
   }
   ESP_LOGI(TAG, "  ✅ Contrôleur créé");
@@ -542,12 +451,11 @@ bool Tab5Camera::init_csi_interface_() {
   this->csi_initialized_ = true;
   
   ESP_LOGI(TAG, "➤ Étape 7/7: Test première frame...");
-  delay(100);  // Attendre que le capteur envoie des données
+  delay(100);
   
   ESP_LOGI(TAG, "");
   ESP_LOGI(TAG, "╔════════════════════════════════════════════╗");
   ESP_LOGI(TAG, "║  ✅✅✅ CSI INITIALISÉ AVEC SUCCÈS ✅✅✅  ║");
-  ESP_LOGI(TAG, "║  Vous devriez voir l'image RÉELLE          ║");
   ESP_LOGI(TAG, "╚════════════════════════════════════════════╝");
   ESP_LOGI(TAG, "");
   
@@ -565,17 +473,13 @@ bool Tab5Camera::capture_csi_frame_() {
   }
   
   esp_cam_ctlr_trans_t trans = {};
-  esp_err_t ret = esp_cam_ctlr_receive(this->cam_ctlr_handle_, &trans, 1000);  // 1 seconde timeout
+  esp_err_t ret = esp_cam_ctlr_receive(this->cam_ctlr_handle_, &trans, 1000);
   
   if (ret == ESP_OK) {
     ESP_LOGD(TAG, "Frame reçue: %u bytes", trans.received_size);
     return true;
   } else if (ret == ESP_ERR_TIMEOUT) {
     ESP_LOGW(TAG, "⚠ TIMEOUT CSI - Pas de signal caméra");
-    ESP_LOGW(TAG, "Vérifiez:");
-    ESP_LOGW(TAG, "  - Câble CSI connecté");
-    ESP_LOGW(TAG, "  - Capteur alimenté");
-    ESP_LOGW(TAG, "  - Registre 0x0100 = 0x01");
     return false;
   } else {
     ESP_LOGE(TAG, "❌ Erreur CSI: %s", esp_err_to_name(ret));
