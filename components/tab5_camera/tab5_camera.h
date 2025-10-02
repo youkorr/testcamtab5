@@ -48,6 +48,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
 
   bool capture_frame();
+  bool take_snapshot() { return capture_frame(); }
   bool start_streaming();
   bool stop_streaming();
   bool is_streaming() const { return this->streaming_; }
