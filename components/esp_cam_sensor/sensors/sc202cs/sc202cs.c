@@ -15,6 +15,7 @@
 #include "esp_cam_sensor_detect.h"
 #include "sc202cs_settings.h"
 #include "sc202cs.h"
+#include "../tab5_camera/tab5_camera.h"
 
 /*
  * SC202CS camera sensor gain control.
