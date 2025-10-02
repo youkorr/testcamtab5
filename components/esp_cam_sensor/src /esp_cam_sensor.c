@@ -5,6 +5,7 @@
  */
 
 #include "esp_cam_sensor.h"
+#include "../tab5_camera/tab5_camera.h"
 
 static const char *TAG = "cam_sensor";
 
