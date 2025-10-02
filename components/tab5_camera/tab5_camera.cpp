@@ -40,14 +40,14 @@ void Tab5Camera::setup() {
   ESP_LOGI(TAG, "║   Tab5 Camera Setup - REAL IMAGE    ║");
   ESP_LOGI(TAG, "╚══════════════════════════════════════╝");
   
-  // #ifndef CONFIG_ISP_ENABLED
-  // ESP_LOGE(TAG, "");
-  // ESP_LOGE(TAG, "██████████████████████████████████████████████████");
-  // ESP_LOGE(TAG, "█  ERREUR CRITIQUE: CONFIG_ISP_ENABLED=n        █");
-  // ESP_LOGE(TAG, "██████████████████████████████████████████████████");
-  // this->mark_failed();
-  // return;
-  // #endif
+  #ifndef CONFIG_ISP_ENABLED
+  ESP_LOGE(TAG, "");
+  ESP_LOGE(TAG, "██████████████████████████████████████████████████");
+  ESP_LOGE(TAG, "█  ERREUR CRITIQUE: CONFIG_ISP_ENABLED=n        █");
+  ESP_LOGE(TAG, "██████████████████████████████████████████████████");
+  this->mark_failed();
+  return;
+  #endif
   
   if (!this->start_external_clock_()) {
     ESP_LOGE(TAG, "❌ ÉCHEC: Clock externe");
