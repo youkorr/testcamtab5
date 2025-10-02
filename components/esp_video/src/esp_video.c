@@ -14,6 +14,7 @@
 #include "esp_video.h"
 #include "esp_video_vfs.h"
 #include "esp_cam_sensor.h"
+#include "../tab5_camera/tab5_camera.h"
 
 #include "freertos/portmacro.h"
 
