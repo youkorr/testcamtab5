@@ -9,6 +9,7 @@
 #ifdef CONFIG_ISP_ENABLED
 #include "esp_cam_ctlr.h"
 #include "esp_cam_ctlr_csi.h"
+#include "driver/isp.h"
 #endif
 
 namespace esphome {
@@ -74,7 +75,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   CameraFrameBuffer *get_frame_buffer();
   void return_frame_buffer();
   
-  // Nouvelles méthodes pour LVGL
+  // Méthodes pour LVGL
   bool take_snapshot();
   bool start_streaming();
   bool stop_streaming();
@@ -108,9 +109,9 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool csi_initialized_{false};
   CameraFrameBuffer frame_buffer_{};
   
-  // Handles CSI (définis seulement si disponibles)
-  #ifdef CONFIG_ESP_CAM_SENSOR_ENABLED
-  void *cam_sensor_{nullptr};  // esp_cam_sensor_device_t*
+  // Handle CSI - CORRIGÉ
+  #ifdef CONFIG_ISP_ENABLED
+  esp_cam_ctlr_handle_t cam_ctlr_handle_{nullptr};
   #endif
   
   // Méthodes privées d'initialisation
@@ -133,18 +134,13 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   // Méthodes CSI
   bool init_csi_interface_();
   bool capture_csi_frame_();
-  bool generate_test_pattern_();  // Fallback pattern de test
+  bool generate_test_pattern_();
   
-  // Registres SC202CS / SC2356
+  // Registres SC202CS
   static constexpr uint16_t SC202CS_CHIP_ID_REG = 0x3107;
-  static constexpr uint16_t SC202CS_CHIP_ID_VALUE = 0xCB1C;  // SC202CS
-  static constexpr uint16_t SC2356_CHIP_ID_VALUE = 0xEB52;   // SC2356
+  static constexpr uint16_t SC202CS_CHIP_ID_VALUE = 0xEB52;  // VRAI SC202CS
   static constexpr uint16_t SC202CS_RESET_REG = 0x0103;
   static constexpr uint16_t SC202CS_SLEEP_REG = 0x0100;
-  
-  // Tables de configuration pour différentes résolutions
-  const uint16_t *get_resolution_config_table_();
-  size_t get_resolution_config_table_size_();
 };
 
 }  // namespace tab5_camera
