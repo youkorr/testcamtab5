@@ -50,21 +50,37 @@ void Tab5Camera::setup() {
 }
 
 bool Tab5Camera::init_sensor_with_official_driver_() {
-  ESP_LOGI(TAG, "Création bus SCCB...");
+  ESP_LOGI(TAG, "Création bus SCCB via I2C direct...");
   
-  esp_err_t ret = esp_sccb_new_i2c_io(
-    0,                        // I2C port 0 (valeur numérique)
-    this->sensor_address_,    // 0x36
-    400000,                   // 400 kHz
-    &this->sccb_handle_
-  );
+  // Configuration I2C maître
+  i2c_config_t i2c_conf = {};
+  i2c_conf.mode = I2C_MODE_MASTER;
+  i2c_conf.sda_io_num = 31;  // Depuis votre YAML
+  i2c_conf.scl_io_num = 32;  // Depuis votre YAML
+  i2c_conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
+  i2c_conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
+  i2c_conf.master.clk_speed = 400000;
   
+  esp_err_t ret = i2c_param_config(0, &i2c_conf);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Échec SCCB: %s", esp_err_to_name(ret));
+    ESP_LOGE(TAG, "Échec config I2C: %s", esp_err_to_name(ret));
     return false;
   }
   
-  ESP_LOGI(TAG, "SCCB créé (adresse 0x%02X @ 400kHz)", this->sensor_address_);
+  ret = i2c_driver_install(0, I2C_MODE_MASTER, 0, 0, 0);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Échec install driver I2C: %s", esp_err_to_name(ret));
+    return false;
+  }
+  
+  // Créer handle SCCB sur I2C existant
+  ret = esp_sccb_new_i2c_io(0, this->sensor_address_, 400000, &this->sccb_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Échec création handle SCCB: %s", esp_err_to_name(ret));
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "SCCB créé (adresse 0x%02X)", this->sensor_address_);
   return this->init_sc202cs_manually_();
 }
 
