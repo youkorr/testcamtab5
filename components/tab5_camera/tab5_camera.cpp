@@ -50,37 +50,37 @@ void Tab5Camera::setup() {
 }
 
 bool Tab5Camera::init_sensor_with_official_driver_() {
-  ESP_LOGI(TAG, "Création bus SCCB via I2C direct...");
+  ESP_LOGI(TAG, "Création handle SCCB...");
   
-  // Configuration I2C maître
+  // Configuration I2C pour SCCB
   i2c_config_t i2c_conf = {};
   i2c_conf.mode = I2C_MODE_MASTER;
-  i2c_conf.sda_io_num = 31;  // Depuis votre YAML
-  i2c_conf.scl_io_num = 32;  // Depuis votre YAML
+  i2c_conf.sda_io_num = (gpio_num_t)31;
+  i2c_conf.scl_io_num = (gpio_num_t)32;
   i2c_conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
   i2c_conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
   i2c_conf.master.clk_speed = 400000;
   
-  esp_err_t ret = i2c_param_config(0, &i2c_conf);
+  esp_err_t ret = i2c_param_config(I2C_NUM_0, &i2c_conf);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Échec config I2C: %s", esp_err_to_name(ret));
     return false;
   }
   
-  ret = i2c_driver_install(0, I2C_MODE_MASTER, 0, 0, 0);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Échec install driver I2C: %s", esp_err_to_name(ret));
+  ret = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
+  if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
+    ESP_LOGE(TAG, "Échec install I2C: %s", esp_err_to_name(ret));
     return false;
   }
   
-  // Créer handle SCCB sur I2C existant
-  ret = esp_sccb_new_i2c_io(0, this->sensor_address_, 400000, &this->sccb_handle_);
+  // Créer handle SCCB avec l'API disponible
+  ret = esp_sccb_new_i2c_config(I2C_NUM_0, this->sensor_address_, &this->sccb_handle_);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Échec création handle SCCB: %s", esp_err_to_name(ret));
+    ESP_LOGE(TAG, "Échec SCCB: %s", esp_err_to_name(ret));
     return false;
   }
   
-  ESP_LOGI(TAG, "SCCB créé (adresse 0x%02X)", this->sensor_address_);
+  ESP_LOGI(TAG, "SCCB créé (0x%02X)", this->sensor_address_);
   return this->init_sc202cs_manually_();
 }
 
@@ -90,7 +90,7 @@ bool Tab5Camera::init_sc202cs_manually_() {
   uint8_t chip_id_h = 0, chip_id_l = 0;
   
   if (esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x3107, &chip_id_h) != ESP_OK) {
-    ESP_LOGE(TAG, "Impossible de communiquer avec le capteur");
+    ESP_LOGE(TAG, "Pas de communication I2C");
     return false;
   }
   
@@ -100,7 +100,7 @@ bool Tab5Camera::init_sc202cs_manually_() {
   ESP_LOGI(TAG, "Chip ID: 0x%04X", chip_id);
   
   if (chip_id != 0x2356 && chip_id != 0xCB34) {
-    ESP_LOGW(TAG, "Chip ID inattendu (attendu 0x2356 ou 0xCB34)");
+    ESP_LOGW(TAG, "Chip ID inattendu");
   }
   
   struct RegVal {
@@ -124,52 +124,19 @@ bool Tab5Camera::init_sc202cs_manually_() {
     {0x320e, 0x02, 0}, {0x320f, 0x08, 0},
     {0x3301, 0x06, 0},
     {0x3304, 0x50, 0},
-    {0x3306, 0x50, 0},
-    {0x3309, 0x68, 0},
-    {0x330b, 0xd0, 0},
-    {0x330e, 0x18, 0},
-    {0x3314, 0x94, 0},
-    {0x331e, 0x41, 0},
-    {0x331f, 0x59, 0},
-    {0x3320, 0x09, 0},
-    {0x3333, 0x10, 0},
-    {0x3334, 0x40, 0},
-    {0x335d, 0x60, 0},
-    {0x3364, 0x56, 0},
-    {0x3390, 0x01, 0},
-    {0x3391, 0x03, 0},
-    {0x3392, 0x07, 0},
-    {0x3393, 0x06, 0},
-    {0x3394, 0x06, 0},
-    {0x3395, 0x06, 0},
     {0x3630, 0xf0, 0},
-    {0x3631, 0x85, 0},
-    {0x3632, 0x74, 0},
-    {0x3633, 0x22, 0},
-    {0x3637, 0x4d, 0},
-    {0x363a, 0x8e, 0},
-    {0x363b, 0x04, 0},
-    {0x363c, 0x06, 0},
     {0x3e00, 0x00, 0},
     {0x3e01, 0x4d, 0},
-    {0x3e02, 0xc0, 0},
-    {0x3e03, 0x0b, 0},
-    {0x3e06, 0x00, 0},
-    {0x3e07, 0x80, 0},
-    {0x3e08, 0x03, 0},
-    {0x3e09, 0x40, 0},
     {0x4501, 0x00, 0},
     {0x4509, 0x00, 0},
     {0x4837, 0x1e, 0},
-    {0x5000, 0x0e, 0},
-    {0x5001, 0x46, 0},
     {0x0100, 0x01, 20},
   };
   
   for (const auto& reg : init_sequence) {
     esp_err_t err = esp_sccb_transmit_reg_a16v8(this->sccb_handle_, reg.reg, reg.val);
     if (err != ESP_OK) {
-      ESP_LOGE(TAG, "Échec écriture reg 0x%04X: %s", reg.reg, esp_err_to_name(err));
+      ESP_LOGE(TAG, "Reg 0x%04X fail", reg.reg);
       return false;
     }
     if (reg.delay_ms > 0) {
@@ -177,42 +144,30 @@ bool Tab5Camera::init_sc202cs_manually_() {
     }
   }
   
-  uint8_t test_pattern_val = 0xFF;
-  esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x4501, &test_pattern_val);
-  ESP_LOGI(TAG, "Registre 0x4501 (test pattern) = 0x%02X", test_pattern_val);
+  uint8_t test_pattern = 0xFF;
+  esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x4501, &test_pattern);
+  ESP_LOGI(TAG, "✅ 0x4501 = 0x%02X", test_pattern);
   
-  if (test_pattern_val != 0x00) {
-    ESP_LOGW(TAG, "Test pattern encore activé, forçage à 0x00...");
+  if (test_pattern != 0x00) {
+    ESP_LOGW(TAG, "Forçage 0x4501 à 0x00");
     esp_sccb_transmit_reg_a16v8(this->sccb_handle_, 0x4501, 0x00);
-    delay(10);
-    
-    esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x4501, &test_pattern_val);
-    ESP_LOGI(TAG, "Après correction: 0x4501 = 0x%02X", test_pattern_val);
   }
   
-  uint8_t streaming_val = 0xFF;
-  esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x0100, &streaming_val);
-  ESP_LOGI(TAG, "Registre 0x0100 (streaming) = 0x%02X", streaming_val);
-  
-  ESP_LOGI(TAG, "SC202CS initialisé avec succès");
   return true;
 }
 
 bool Tab5Camera::start_external_clock_() {
   if (this->xclk_pin_ == nullptr) {
-    ESP_LOGW(TAG, "Pas de pin clock externe");
     return false;
   }
   
   int gpio_num = -1;
-  
   #ifdef USE_ESP32
   auto *esp32_pin = (esphome::esp32::ESP32InternalGPIOPin*)this->xclk_pin_;
   gpio_num = esp32_pin->get_pin();
   #endif
   
   if (gpio_num < 0) {
-    ESP_LOGE(TAG, "GPIO clock invalide");
     return false;
   }
   
@@ -228,7 +183,6 @@ bool Tab5Camera::start_external_clock_() {
     ledc_timer.duty_resolution = LEDC_TIMER_2_BIT;
     err = ledc_timer_config(&ledc_timer);
     if (err != ESP_OK) {
-      ESP_LOGE(TAG, "Échec config timer LEDC: %s", esp_err_to_name(err));
       return false;
     }
   }
@@ -242,13 +196,7 @@ bool Tab5Camera::start_external_clock_() {
   ledc_channel.hpoint = 0;
   
   err = ledc_channel_config(&ledc_channel);
-  if (err != ESP_OK) {
-    ESP_LOGE(TAG, "Échec config canal LEDC: %s", esp_err_to_name(err));
-    return false;
-  }
-  
-  ESP_LOGI(TAG, "Clock 24MHz démarrée sur GPIO%d", gpio_num);
-  return true;
+  return (err == ESP_OK);
 }
 
 bool Tab5Camera::allocate_frame_buffer_() {
@@ -256,14 +204,9 @@ bool Tab5Camera::allocate_frame_buffer_() {
   this->get_resolution_dimensions_(width, height);
   
   size_t buffer_size = width * height * sizeof(uint16_t);
-  
-  this->frame_buffer_.buffer = (uint8_t *)heap_caps_malloc(
-    buffer_size, 
-    MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT
-  );
+  this->frame_buffer_.buffer = (uint8_t *)heap_caps_malloc(buffer_size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   
   if (this->frame_buffer_.buffer == nullptr) {
-    ESP_LOGE(TAG, "Échec allocation %u bytes en PSRAM", buffer_size);
     return false;
   }
   
@@ -272,7 +215,7 @@ bool Tab5Camera::allocate_frame_buffer_() {
   this->frame_buffer_.height = height;
   this->frame_buffer_.format = this->pixel_format_;
   
-  ESP_LOGI(TAG, "Buffer alloué: %ux%u = %u bytes", width, height, buffer_size);
+  ESP_LOGI(TAG, "Buffer %ux%u OK", width, height);
   return true;
 }
 
@@ -282,12 +225,8 @@ bool Tab5Camera::start_streaming() {
   }
   
   esp_err_t ret = esp_sccb_transmit_reg_a16v8(this->sccb_handle_, 0x0100, 0x01);
-  if (ret == ESP_OK) {
-    this->streaming_ = true;
-    ESP_LOGI(TAG, "Streaming démarré");
-    return true;
-  }
-  return false;
+  this->streaming_ = (ret == ESP_OK);
+  return this->streaming_;
 }
 
 bool Tab5Camera::stop_streaming() {
@@ -296,12 +235,8 @@ bool Tab5Camera::stop_streaming() {
   }
   
   esp_err_t ret = esp_sccb_transmit_reg_a16v8(this->sccb_handle_, 0x0100, 0x00);
-  if (ret == ESP_OK) {
-    this->streaming_ = false;
-    ESP_LOGI(TAG, "Streaming arrêté");
-    return true;
-  }
-  return false;
+  this->streaming_ = !(ret == ESP_OK);
+  return (ret == ESP_OK);
 }
 
 bool Tab5Camera::capture_frame() {
@@ -339,11 +274,8 @@ void Tab5Camera::loop() {}
 
 void Tab5Camera::dump_config() {
   ESP_LOGCONFIG(TAG, "Tab5 Camera:");
-  ESP_LOGCONFIG(TAG, "  Nom: %s", this->name_.c_str());
-  ESP_LOGCONFIG(TAG, "  Adresse I2C: 0x%02X", this->sensor_address_);
-  ESP_LOGCONFIG(TAG, "  Résolution: %ux%u", 
-                this->frame_buffer_.width, this->frame_buffer_.height);
-  ESP_LOGCONFIG(TAG, "  Initialisé: %s", this->initialized_ ? "OUI" : "NON");
+  ESP_LOGCONFIG(TAG, "  Adresse: 0x%02X", this->sensor_address_);
+  ESP_LOGCONFIG(TAG, "  Résolution: %ux%u", this->frame_buffer_.width, this->frame_buffer_.height);
 }
 
 }  // namespace tab5_camera
