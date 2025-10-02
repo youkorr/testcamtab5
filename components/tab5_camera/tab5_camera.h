@@ -99,7 +99,13 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   // État interne
   bool initialized_{false};
   bool streaming_{false};
+  bool csi_initialized_{false};
   CameraFrameBuffer frame_buffer_{};
+  
+  // Handles CSI (définis seulement si disponibles)
+  #ifdef CONFIG_ESP_CAM_SENSOR_ENABLED
+  void *cam_sensor_{nullptr};  // esp_cam_sensor_device_t*
+  #endif
   
   // Méthodes privées d'initialisation
   bool init_camera_();
@@ -117,6 +123,11 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   CameraResolutionInfo get_resolution_info_();
   bool allocate_frame_buffer_();
   void free_frame_buffer_();
+  
+  // Méthodes CSI
+  bool init_csi_interface_();
+  bool capture_csi_frame_();
+  bool generate_test_pattern_();  // Fallback pattern de test
   
   // Registres SC202CS / SC2356
   static constexpr uint16_t SC202CS_CHIP_ID_REG = 0x3107;
