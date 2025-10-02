@@ -7,6 +7,7 @@
 #endif
 
 #include <driver/ledc.h>
+#include <driver/i2c.h>
 #include "esp_sccb_intf.h"
 
 namespace esphome {
