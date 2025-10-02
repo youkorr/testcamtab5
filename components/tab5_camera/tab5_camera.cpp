@@ -424,18 +424,19 @@ bool Tab5Camera::init_csi_interface_() {
   
   #ifdef CONFIG_ISP_ENABLED
   
-  // Configuration EXACTE de M5Stack pour SC202CS/SC2356
+  // Configuration adaptée pour ESP-IDF 5.x (ESP32-P4)
   esp_cam_ctlr_csi_config_t csi_config = {};
   csi_config.ctlr_id = 0;
   csi_config.h_res = this->frame_buffer_.width;
   csi_config.v_res = this->frame_buffer_.height;
-  csi_config.lane_bit_rate_mbps = 576;  // M5Stack: 576 MHz pour RAW8
-  csi_config.input_data_color_type = MIPI_CSI_COLOR_RAW8;  // M5Stack: RAW8
-  csi_config.output_data_color_type = MIPI_CSI_COLOR_RGB565;
-  csi_config.data_lane_num = 1;  // M5Stack: 1 seule lane !
+  csi_config.lane_bit_rate_mbps = 576;  // M5Stack: 576 Mbps pour RAW8
+  // Remplacement API: utiliser CAM_CTLR_COLOR_* au lieu de MIPI_CSI_COLOR_*
+  csi_config.input_data_color_type = CAM_CTLR_COLOR_RAW8;   // RAW8 input
+  csi_config.output_data_color_type = CAM_CTLR_COLOR_RGB565; // RGB565 output
+  csi_config.data_lane_num = 1;  // M5Stack: 1 seule lane
   csi_config.byte_swap_en = false;
   csi_config.queue_items = 1;
-  csi_config.bayer_type = ISP_COLOR_BGGR;  // M5Stack: BGGR pattern
+  // csi_config.bayer_type n'existe plus dans IDF 5.x → gérer via ISP si besoin
   
   // Créer le contrôleur CSI
   esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->cam_ctlr_handle_);
@@ -466,7 +467,8 @@ bool Tab5Camera::init_csi_interface_() {
   ret = esp_cam_ctlr_register_event_callbacks(this->cam_ctlr_handle_, &cbs, this);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Échec enregistrement callbacks: %s", esp_err_to_name(ret));
-    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    // suppression via nouveau nom de fonction
+    esp_cam_ctlr_del(this->cam_ctlr_handle_);
     this->cam_ctlr_handle_ = nullptr;
     return false;
   }
@@ -475,7 +477,7 @@ bool Tab5Camera::init_csi_interface_() {
   ret = esp_cam_ctlr_enable(this->cam_ctlr_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Échec activation contrôleur: %s", esp_err_to_name(ret));
-    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    esp_cam_ctlr_del(this->cam_ctlr_handle_);
     this->cam_ctlr_handle_ = nullptr;
     return false;
   }
@@ -485,13 +487,13 @@ bool Tab5Camera::init_csi_interface_() {
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Échec démarrage CSI: %s", esp_err_to_name(ret));
     esp_cam_ctlr_disable(this->cam_ctlr_handle_);
-    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    esp_cam_ctlr_del(this->cam_ctlr_handle_);
     this->cam_ctlr_handle_ = nullptr;
     return false;
   }
   
   this->csi_initialized_ = true;
-  ESP_LOGI(TAG, "✓ Interface CSI initialisée M5Stack: %ux%u, 1 lane @ 576 Mbps, RAW8→RGB565, BGGR", 
+  ESP_LOGI(TAG, "✓ Interface CSI initialisée M5Stack: %ux%u, 1 lane @ 576 Mbps, RAW8→RGB565", 
            this->frame_buffer_.width, this->frame_buffer_.height);
   return true;
   
@@ -572,3 +574,4 @@ void Tab5Camera::return_frame_buffer() {
 
 }  // namespace tab5_camera
 }  // namespace esphome
+
