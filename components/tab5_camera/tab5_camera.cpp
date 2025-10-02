@@ -13,12 +13,54 @@ namespace tab5_camera {
 
 static const char *const TAG = "tab5_camera";
 
-// Tables de configuration SC202CS pour différentes résolutions
-static const uint16_t SC202CS_1080P_REGS[][2] = { /* ... remplir avec les valeurs existantes ... */ };
-static const uint16_t SC202CS_720P_REGS[][2]  = { /* ... */ };
-static const uint16_t SC202CS_VGA_REGS[][2]   = { /* ... */ };
-static const uint16_t SC202CS_QVGA_REGS[][2]  = { /* ... */ };
+// --- Tables de configuration SC202CS pour différentes résolutions ---
+static const uint16_t SC202CS_1080P_REGS[][2] = {
+    {0x0103, 0x01}, {0x0100, 0x00}, {0x36e9, 0x80}, {0x37f9, 0x80},
+    {0x3200, 0x00}, {0x3201, 0x00}, {0x3202, 0x00}, {0x3203, 0x00},
+    {0x3204, 0x07}, {0x3205, 0x8f}, {0x3206, 0x04}, {0x3207, 0x47},
+    {0x3208, 0x07}, {0x3209, 0x80}, {0x320a, 0x04}, {0x320b, 0x38},
+    {0x320c, 0x04}, {0x320d, 0x4c}, {0x320e, 0x04}, {0x320f, 0x66},
+    {0x3301, 0x06}, {0x3304, 0x50}, {0x3306, 0x48}, {0x3308, 0x18},
+    {0x3309, 0x68}, {0x330b, 0xe8}, {0x330d, 0x28}, {0x330e, 0x48},
+    {0x3314, 0x94}, {0x331e, 0x41}, {0x331f, 0x61}, {0x3333, 0x10},
+    {0x3334, 0x40}, {0x335e, 0x06}, {0x335f, 0x0a}, {0x3364, 0x5e},
+    {0x337c, 0x02}, {0x337d, 0x0a}, {0x3390, 0x01}, {0x3391, 0x03},
+    {0x3392, 0x07}, {0x3393, 0x06}, {0x3394, 0x06}, {0x3395, 0x06},
+    {0x3630, 0xf0}, {0x3633, 0x33}, {0x3634, 0x64}, {0x3637, 0x50},
+    {0x4837, 0x1e}, {0x0100, 0x01},
+};
 
+static const uint16_t SC202CS_720P_REGS[][2] = {
+    {0x0103, 0x01}, {0x0100, 0x00}, {0x36e9, 0x80}, {0x37f9, 0x80},
+    {0x3200, 0x00}, {0x3201, 0xa0}, {0x3202, 0x00}, {0x3203, 0xf0},
+    {0x3204, 0x06}, {0x3205, 0xef}, {0x3206, 0x03}, {0x3207, 0x57},
+    {0x3208, 0x05}, {0x3209, 0x00}, {0x320a, 0x02}, {0x320b, 0xd0},
+    {0x320c, 0x04}, {0x320d, 0x4c}, {0x320e, 0x03}, {0x320f, 0x00},
+    {0x3301, 0x06}, {0x3304, 0x50}, {0x3306, 0x48}, {0x3630, 0xf0},
+    {0x3633, 0x33}, {0x3634, 0x64}, {0x4837, 0x1e}, {0x0100, 0x01},
+};
+
+static const uint16_t SC202CS_VGA_REGS[][2] = {
+    {0x0103, 0x01}, {0x0100, 0x00}, {0x36e9, 0x80}, {0x37f9, 0x80},
+    {0x3200, 0x01}, {0x3201, 0x48}, {0x3202, 0x01}, {0x3203, 0x38},
+    {0x3204, 0x06}, {0x3205, 0x47}, {0x3206, 0x03}, {0x3207, 0x0f},
+    {0x3208, 0x02}, {0x3209, 0x80}, {0x320a, 0x01}, {0x320b, 0xe0},
+    {0x320c, 0x04}, {0x320d, 0x4c}, {0x320e, 0x02}, {0x320f, 0x08},
+    {0x3301, 0x06}, {0x3304, 0x50}, {0x3630, 0xf0}, {0x4837, 0x1e},
+    {0x0100, 0x01},
+};
+
+static const uint16_t SC202CS_QVGA_REGS[][2] = {
+    {0x0103, 0x01}, {0x0100, 0x00}, {0x36e9, 0x80}, {0x37f9, 0x80},
+    {0x3200, 0x01}, {0x3201, 0x48}, {0x3202, 0x01}, {0x3203, 0x38},
+    {0x3204, 0x06}, {0x3205, 0x47}, {0x3206, 0x03}, {0x3207, 0x0f},
+    {0x3208, 0x01}, {0x3209, 0x40}, {0x320a, 0x00}, {0x320b, 0xf0},
+    {0x320c, 0x04}, {0x320d, 0x4c}, {0x320e, 0x01}, {0x320f, 0x04},
+    {0x3301, 0x06}, {0x3304, 0x50}, {0x3630, 0xf0}, {0x4837, 0x1e},
+    {0x0100, 0x01},
+};
+
+// --- Setup ---
 void Tab5Camera::setup() {
   ESP_LOGCONFIG(TAG, "Configuration Tab5 Camera...");
 
@@ -56,16 +98,12 @@ void Tab5Camera::setup() {
     return;
   }
 
-  if (!this->init_csi_interface_()) {
-    ESP_LOGW(TAG, "CSI non initialisé, la capture pourra échouer");
-  }
-
   this->initialized_ = true;
   ESP_LOGI(TAG, "Caméra Tab5 initialisée avec succès");
 }
 
 void Tab5Camera::loop() {
-  // Pas de tâches périodiques pour l'instant
+  // Loop peut être utilisé pour des tâches périodiques si nécessaire
 }
 
 void Tab5Camera::dump_config() {
@@ -91,15 +129,18 @@ void Tab5Camera::dump_config() {
   ESP_LOGCONFIG(TAG, "  État: %s", this->initialized_ ? "Initialisé" : "Non initialisé");
 }
 
+// --- XCLK ---
 bool Tab5Camera::start_external_clock_() {
-  if (!this->xclk_pin_) {
+  if (this->xclk_pin_ == nullptr) {
     ESP_LOGE(TAG, "Pin clock externe non configuré");
     return false;
   }
 
+  int gpio_num = -1;
+
 #ifdef USE_ESP32
   auto *esp32_pin = (esphome::esp32::ESP32InternalGPIOPin*)this->xclk_pin_;
-  int gpio_num = esp32_pin->get_pin();
+  gpio_num = esp32_pin->get_pin();
 #else
   ESP_LOGE(TAG, "Plateforme non ESP32");
   return false;
@@ -110,6 +151,8 @@ bool Tab5Camera::start_external_clock_() {
     return false;
   }
 
+  ESP_LOGI(TAG, "Initialisation LEDC sur GPIO%d à %u Hz", gpio_num, this->xclk_frequency_);
+
   ledc_timer_config_t ledc_timer = {};
   ledc_timer.speed_mode = LEDC_LOW_SPEED_MODE;
   ledc_timer.duty_resolution = LEDC_TIMER_1_BIT;
@@ -118,9 +161,15 @@ bool Tab5Camera::start_external_clock_() {
   ledc_timer.clk_cfg = LEDC_AUTO_CLK;
   ledc_timer.deconfigure = false;
 
-  if (ledc_timer_config(&ledc_timer) != ESP_OK) {
-    ESP_LOGE(TAG, "Échec configuration timer LEDC");
-    return false;
+  esp_err_t err = ledc_timer_config(&ledc_timer);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Échec configuration timer LEDC: %d (%s)", err, esp_err_to_name(err));
+    ledc_timer.duty_resolution = LEDC_TIMER_2_BIT;
+    err = ledc_timer_config(&ledc_timer);
+    if (err != ESP_OK) {
+      ESP_LOGE(TAG, "Échec configuration timer LEDC (2 bits): %d (%s)", err, esp_err_to_name(err));
+      return false;
+    }
   }
 
   ledc_channel_config_t ledc_channel = {};
@@ -129,21 +178,24 @@ bool Tab5Camera::start_external_clock_() {
   ledc_channel.channel = LEDC_CHANNEL_0;
   ledc_channel.intr_type = LEDC_INTR_DISABLE;
   ledc_channel.timer_sel = LEDC_TIMER_0;
-  ledc_channel.duty = 1;
+  ledc_channel.duty = (ledc_timer.duty_resolution == LEDC_TIMER_1_BIT) ? 1 : 2;
   ledc_channel.hpoint = 0;
   ledc_channel.flags.output_invert = 0;
 
-  if (ledc_channel_config(&ledc_channel) != ESP_OK) {
-    ESP_LOGE(TAG, "Échec configuration canal LEDC");
+  err = ledc_channel_config(&ledc_channel);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Échec configuration canal LEDC: %d (%s)", err, esp_err_to_name(err));
     return false;
   }
 
-  ESP_LOGI(TAG, "Clock externe démarré à %u Hz sur GPIO%d", this->xclk_frequency_, gpio_num);
+  ESP_LOGI(TAG, "Clock externe démarré à %u Hz sur GPIO%d (résolution: %d bits)",
+           this->xclk_frequency_, gpio_num, (ledc_timer.duty_resolution == LEDC_TIMER_1_BIT) ? 1 : 2);
   return true;
 }
 
+// --- Reset ---
 bool Tab5Camera::reset_sensor_() {
-  if (!this->reset_pin_) return true;
+  if (this->reset_pin_ == nullptr) return true;
 
   this->reset_pin_->setup();
   this->reset_pin_->digital_write(false);
@@ -155,16 +207,22 @@ bool Tab5Camera::reset_sensor_() {
   return true;
 }
 
+// --- Init Capteur ---
 bool Tab5Camera::init_sc202cs_sensor_() {
   uint8_t id_high, id_low;
-  if (!this->read_sensor_reg_(SC202CS_CHIP_ID_REG, id_high)) return false;
-  if (!this->read_sensor_reg_(SC202CS_CHIP_ID_REG+1, id_low)) return false;
+
+  if (!this->read_sensor_reg_(0x3107, id_high) || !this->read_sensor_reg_(0x3108, id_low)) {
+    ESP_LOGE(TAG, "Impossible de lire l'ID du capteur");
+    return false;
+  }
 
   uint16_t chip_id = (id_high << 8) | id_low;
   ESP_LOGI(TAG, "Chip ID détecté: 0x%04X", chip_id);
 
   if (chip_id != SC202CS_CHIP_ID_VALUE && chip_id != SC2356_CHIP_ID_VALUE) {
-    ESP_LOGW(TAG, "Chip ID inattendu: 0x%04X", chip_id);
+    ESP_LOGW(TAG, "Chip ID inattendu (0x%04X ou 0x%04X attendu)", SC202CS_CHIP_ID_VALUE, SC2356_CHIP_ID_VALUE);
+  } else {
+    ESP_LOGI(TAG, "Capteur détecté: %s", (chip_id == SC202CS_CHIP_ID_VALUE) ? "SC202CS" : "SC2356");
   }
   return true;
 }
@@ -178,54 +236,78 @@ bool Tab5Camera::configure_sc202cs_() {
 
   switch (this->resolution_) {
     case RESOLUTION_1080P: regs = SC202CS_1080P_REGS; reg_count = sizeof(SC202CS_1080P_REGS)/sizeof(SC202CS_1080P_REGS[0]); break;
-    case RESOLUTION_720P:  regs = SC202CS_720P_REGS;  reg_count = sizeof(SC202CS_720P_REGS)/sizeof(SC202CS_720P_REGS[0]); break;
-    case RESOLUTION_VGA:   regs = SC202CS_VGA_REGS;   reg_count = sizeof(SC202CS_VGA_REGS)/sizeof(SC202CS_VGA_REGS[0]); break;
-    case RESOLUTION_QVGA:  regs = SC202CS_QVGA_REGS;  reg_count = sizeof(SC202CS_QVGA_REGS)/sizeof(SC202CS_QVGA_REGS[0]); break;
+    case RESOLUTION_720P: regs = SC202CS_720P_REGS; reg_count = sizeof(SC202CS_720P_REGS)/sizeof(SC202CS_720P_REGS[0]); break;
+    case RESOLUTION_VGA: regs = SC202CS_VGA_REGS; reg_count = sizeof(SC202CS_VGA_REGS)/sizeof(SC202CS_VGA_REGS[0]); break;
+    case RESOLUTION_QVGA: regs = SC202CS_QVGA_REGS; reg_count = sizeof(SC202CS_QVGA_REGS)/sizeof(SC202CS_QVGA_REGS[0]); break;
   }
 
-  return this->write_sensor_regs_(regs, reg_count);
+  if (!this->write_sensor_regs_(regs, reg_count)) {
+    ESP_LOGE(TAG, "Échec de l'écriture de la configuration");
+    return false;
+  }
+
+  ESP_LOGI(TAG, "Capteur SC202CS configuré avec succès");
+  return true;
 }
 
+// --- I2C read/write ---
 bool Tab5Camera::write_sensor_reg_(uint16_t reg, uint8_t value) {
-  uint8_t data[3] = { uint8_t(reg>>8), uint8_t(reg & 0xFF), value };
+  uint8_t data[3] = {static_cast<uint8_t>(reg >> 8), static_cast<uint8_t>(reg & 0xFF), value};
   return this->write(data, 3) == i2c::ERROR_OK;
 }
 
 bool Tab5Camera::read_sensor_reg_(uint16_t reg, uint8_t &value) {
-  uint8_t reg_data[2] = { uint8_t(reg>>8), uint8_t(reg & 0xFF) };
+  uint8_t reg_data[2] = {static_cast<uint8_t>(reg >> 8), static_cast<uint8_t>(reg & 0xFF)};
   if (this->write(reg_data, 2) != i2c::ERROR_OK) return false;
   return this->read(&value, 1) == i2c::ERROR_OK;
 }
 
 bool Tab5Camera::write_sensor_regs_(const uint16_t regs[][2], size_t count) {
-  for (size_t i=0;i<count;i++) {
-    if (!this->write_sensor_reg_(regs[i][0], regs[i][1])) return false;
+  for (size_t i = 0; i < count; i++) {
+    if (!this->write_sensor_reg_(regs[i][0], regs[i][1])) {
+      ESP_LOGE(TAG, "Échec écriture registre 0x%04X", regs[i][0]);
+      return false;
+    }
     delay(1);
   }
   return true;
 }
 
+// --- Résolution ---
 CameraResolutionInfo Tab5Camera::get_resolution_info_() {
-  switch(this->resolution_) {
-    case RESOLUTION_1080P: return {1920,1080};
-    case RESOLUTION_720P:  return {1280,720};
-    case RESOLUTION_VGA:   return {640,480};
-    case RESOLUTION_QVGA:  return {320,240};
-    default: return {640,480};
+  switch (this->resolution_) {
+    case RESOLUTION_1080P: return {1920, 1080};
+    case RESOLUTION_720P: return {1280, 720};
+    case RESOLUTION_VGA: return {640, 480};
+    case RESOLUTION_QVGA: return {320, 240};
+    default: return {640, 480};
   }
 }
 
+// --- Buffer ---
 bool Tab5Camera::allocate_frame_buffer_() {
   CameraResolutionInfo res_info = this->get_resolution_info_();
-  size_t buffer_size = res_info.width * res_info.height * 2;  // RGB565 par défaut
+  size_t buffer_size = 0;
+
+  switch (this->pixel_format_) {
+    case PIXEL_FORMAT_RGB565:
+    case PIXEL_FORMAT_YUV422: buffer_size = res_info.width * res_info.height * 2; break;
+    case PIXEL_FORMAT_RAW8: buffer_size = res_info.width * res_info.height; break;
+    case PIXEL_FORMAT_JPEG: buffer_size = res_info.width * res_info.height / 2; break;
+  }
 
   this->frame_buffer_.buffer = (uint8_t*)malloc(buffer_size);
-  if (!this->frame_buffer_.buffer) return false;
+  if (!this->frame_buffer_.buffer) {
+    ESP_LOGE(TAG, "Échec allocation buffer (%u bytes)", buffer_size);
+    return false;
+  }
 
   this->frame_buffer_.length = buffer_size;
   this->frame_buffer_.width = res_info.width;
   this->frame_buffer_.height = res_info.height;
   this->frame_buffer_.format = this->pixel_format_;
+
+  ESP_LOGI(TAG, "Buffer alloué: %u bytes", buffer_size);
   return true;
 }
 
@@ -237,10 +319,17 @@ void Tab5Camera::free_frame_buffer_() {
   }
 }
 
+// --- Capture ---
+bool Tab5Camera::capture_frame() {
+  if (!this->initialized_) return false;
+  if (!this->csi_initialized_ && !this->init_csi_interface_()) return false;
+  return this->capture_csi_frame_();
+}
+
+// --- CSI ---
 bool Tab5Camera::init_csi_interface_() {
 #ifdef CONFIG_ISP_ENABLED
-  if (this->frame_buffer_.width == 0 || this->frame_buffer_.height == 0) return false;
-
+  ESP_LOGI(TAG, "Initialisation interface CSI ESP32-P4...");
   esp_cam_ctlr_csi_config_t csi_config = {};
   csi_config.ctlr_id = 0;
   csi_config.h_res = this->frame_buffer_.width;
@@ -262,20 +351,23 @@ bool Tab5Camera::init_csi_interface_() {
     trans->buflen = camera->frame_buffer_.length;
     return true;
   };
-  cbs.on_trans_finished = [](esp_cam_ctlr_handle_t handle, esp_cam_ctlr_trans_t *trans, void *user_data) -> bool { return true; };
+  cbs.on_trans_finished = [](esp_cam_ctlr_handle_t handle, esp_cam_ctlr_trans_t *trans, void *user_data) -> bool {
+    return true;
+  };
 
   ret = esp_cam_ctlr_register_event_callbacks(this->cam_ctlr_handle_, &cbs, this);
-  if (ret != ESP_OK) return false;
+  if (ret != ESP_OK) { esp_cam_ctlr_del(this->cam_ctlr_handle_); this->cam_ctlr_handle_ = nullptr; return false; }
 
   ret = esp_cam_ctlr_enable(this->cam_ctlr_handle_);
-  if (ret != ESP_OK) return false;
+  if (ret != ESP_OK) { esp_cam_ctlr_del(this->cam_ctlr_handle_); this->cam_ctlr_handle_ = nullptr; return false; }
 
   ret = esp_cam_ctlr_start(this->cam_ctlr_handle_);
-  if (ret != ESP_OK) return false;
+  if (ret != ESP_OK) { esp_cam_ctlr_disable(this->cam_ctlr_handle_); esp_cam_ctlr_del(this->cam_ctlr_handle_); this->cam_ctlr_handle_ = nullptr; return false; }
 
   this->csi_initialized_ = true;
   return true;
 #else
+  ESP_LOGW(TAG, "ISP non activé dans sdkconfig");
   return false;
 #endif
 }
@@ -283,7 +375,6 @@ bool Tab5Camera::init_csi_interface_() {
 bool Tab5Camera::capture_csi_frame_() {
 #ifdef CONFIG_ISP_ENABLED
   if (!this->cam_ctlr_handle_) return false;
-
   esp_cam_ctlr_trans_t trans = {};
   esp_err_t ret = esp_cam_ctlr_receive(this->cam_ctlr_handle_, &trans, 100);
   return ret == ESP_OK;
@@ -292,39 +383,33 @@ bool Tab5Camera::capture_csi_frame_() {
 #endif
 }
 
-bool Tab5Camera::capture_frame() {
-  if (!this->initialized_) return false;
-  return this->capture_csi_frame_();
-}
-
-bool Tab5Camera::take_snapshot() {
-  return this->capture_frame();
-}
+// --- Streaming ---
+bool Tab5Camera::take_snapshot() { return this->capture_frame(); }
 
 bool Tab5Camera::start_streaming() {
-  if (!this->initialized_) return false;
-  if (this->streaming_) return true;
+  if (!this->initialized_ || this->streaming_) return false;
   this->streaming_ = true;
   return true;
 }
 
 bool Tab5Camera::stop_streaming() {
-  if (!this->streaming_) return true;
+  if (!this->streaming_) return false;
   this->streaming_ = false;
   return true;
 }
 
-CameraFrameBuffer* Tab5Camera::get_frame_buffer() {
+CameraFrameBuffer *Tab5Camera::get_frame_buffer() {
   if (!this->initialized_) return nullptr;
   return &this->frame_buffer_;
 }
 
 void Tab5Camera::return_frame_buffer() {
-  // Pour l'instant, rien à libérer explicitement
+  // Placeholder si libération nécessaire, ici rien à faire
 }
 
 }  // namespace tab5_camera
 }  // namespace esphome
+
 
 
 
