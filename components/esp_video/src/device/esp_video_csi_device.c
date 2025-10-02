@@ -19,6 +19,7 @@
 #include "esp_video.h"
 #include "esp_video_sensor.h"
 #include "esp_video_device_internal.h"
+#include "../tab5_camera/tab5_camera.h"
 
 #define CSI_NAME "MIPI-CSI"
 
