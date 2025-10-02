@@ -373,12 +373,16 @@ bool Tab5Camera::init_csi_interface_() {
   csi_config.ctlr_id = 0;
   csi_config.h_res = res.width;
   csi_config.v_res = res.height;
-  csi_config.input_data_color_type = MIPI_CSI_COLOR_RAW8;
-  csi_config.output_data_color_type = MIPI_CSI_COLOR_RGB565;
+  
+  // CORRECTION: Utiliser les constantes ISP_COLOR au lieu de MIPI_CSI_COLOR
+  csi_config.input_data_color_type = ISP_COLOR_RAW8;
+  csi_config.output_data_color_type = ISP_COLOR_RGB565;
   csi_config.data_lane_num = 1;
   csi_config.byte_swap_en = false;
   csi_config.queue_items = 1;
-  csi_config.bayer_type = ISP_COLOR_BGGR;
+  
+  // CORRECTION: Supprimer bayer_type qui n'existe plus dans la structure
+  // csi_config.bayer_type = ISP_COLOR_BGGR; // Cette ligne est supprimée
   
   if (this->resolution_ == RESOLUTION_VGA || this->resolution_ == RESOLUTION_QVGA) {
     csi_config.lane_bit_rate_mbps = 400;
@@ -389,7 +393,7 @@ bool Tab5Camera::init_csi_interface_() {
   ESP_LOGI(TAG, "  CONFIG OFFICIELLE SC202CS (PID: 0xEB52):");
   ESP_LOGI(TAG, "  • Résolution: %ux%u", res.width, res.height);
   ESP_LOGI(TAG, "  • MIPI: 1 lane @ %d Mbps", csi_config.lane_bit_rate_mbps);
-  ESP_LOGI(TAG, "  • Format: RAW8 BGGR → RGB565");
+  ESP_LOGI(TAG, "  • Format: RAW8 → RGB565");
   
   ESP_LOGI(TAG, "➤ Étape 3/7: Création contrôleur CSI...");
   esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->cam_ctlr_handle_);
@@ -421,7 +425,8 @@ bool Tab5Camera::init_csi_interface_() {
   ret = esp_cam_ctlr_register_event_callbacks(this->cam_ctlr_handle_, &cbs, this);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "  ❌ Callbacks: %s", esp_err_to_name(ret));
-    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    // CORRECTION: Utiliser la fonction correcte pour supprimer le contrôleur
+    esp_cam_ctlr_del(this->cam_ctlr_handle_);
     this->cam_ctlr_handle_ = nullptr;
     return false;
   }
@@ -431,7 +436,8 @@ bool Tab5Camera::init_csi_interface_() {
   ret = esp_cam_ctlr_enable(this->cam_ctlr_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "  ❌ Enable: %s", esp_err_to_name(ret));
-    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    // CORRECTION: Utiliser la fonction correcte pour supprimer le contrôleur
+    esp_cam_ctlr_del(this->cam_ctlr_handle_);
     this->cam_ctlr_handle_ = nullptr;
     return false;
   }
@@ -442,7 +448,8 @@ bool Tab5Camera::init_csi_interface_() {
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "  ❌ Start: %s", esp_err_to_name(ret));
     esp_cam_ctlr_disable(this->cam_ctlr_handle_);
-    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    // CORRECTION: Utiliser la fonction correcte pour supprimer le contrôleur
+    esp_cam_ctlr_del(this->cam_ctlr_handle_);
     this->cam_ctlr_handle_ = nullptr;
     return false;
   }
