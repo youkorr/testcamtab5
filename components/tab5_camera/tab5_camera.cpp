@@ -379,14 +379,27 @@ bool Tab5Camera::capture_frame() {
     return false;
   }
   
-  // TODO: Implémenter la capture via CSI
-  // Pour l'instant, générer un pattern de test
-  ESP_LOGI(TAG, "Génération d'une image de test...");
+  // Si CSI n'est pas initialisé, essayer de l'initialiser
+  if (!this->csi_initialized_) {
+    if (!this->init_csi_interface_()) {
+      // Si CSI échoue, utiliser le pattern de test
+      ESP_LOGV(TAG, "CSI non disponible, utilisation pattern de test");
+      return this->generate_test_pattern_();
+    }
+  }
   
-  // Créer un pattern de test RGB565
+  // Capturer via CSI
+  if (this->capture_csi_frame_()) {
+    return true;
+  }
+  
+  // Si échec CSI, fallback sur pattern de test
+  return this->generate_test_pattern_();
+}
+
+bool Tab5Camera::generate_test_pattern_() {
+  // Pattern de test RGB565 animé
   uint16_t *pixels = (uint16_t*)this->frame_buffer_.buffer;
-  size_t pixel_count = this->frame_buffer_.width * this->frame_buffer_.height;
-  
   static uint8_t frame_counter = 0;
   frame_counter++;
   
@@ -394,18 +407,123 @@ bool Tab5Camera::capture_frame() {
     for (size_t x = 0; x < this->frame_buffer_.width; x++) {
       size_t idx = y * this->frame_buffer_.width + x;
       
-      // Pattern de test avec dégradé et compteur
       uint8_t r = (x * 255 / this->frame_buffer_.width) & 0x1F;
       uint8_t g = ((y + frame_counter) * 255 / this->frame_buffer_.height) & 0x3F;
       uint8_t b = ((x + y + frame_counter) * 255 / (this->frame_buffer_.width + this->frame_buffer_.height)) & 0x1F;
       
-      // RGB565 format: RRRR RGGG GGGB BBBB
       pixels[idx] = (r << 11) | (g << 5) | b;
     }
   }
   
-  ESP_LOGI(TAG, "Image de test générée (frame %d)", frame_counter);
+  ESP_LOGV(TAG, "Pattern test généré (frame %d)", frame_counter);
   return true;
+}
+
+bool Tab5Camera::init_csi_interface_() {
+  ESP_LOGI(TAG, "Initialisation interface CSI ESP32-P4...");
+  
+  #ifdef CONFIG_ISP_ENABLED
+  
+  // Configuration du contrôleur CSI
+  esp_cam_ctlr_csi_config_t csi_config = {};
+  csi_config.ctlr_id = 0;
+  csi_config.h_res = this->frame_buffer_.width;
+  csi_config.v_res = this->frame_buffer_.height;
+  csi_config.lane_bit_rate_mbps = 800;  // SC2356: 800 Mbps/lane
+  csi_config.input_data_color_type = MIPI_CSI_COLOR_RAW8;
+  csi_config.output_data_color_type = MIPI_CSI_COLOR_RGB565;
+  csi_config.data_lane_num = 2;  // SC2356 utilise 2 lanes
+  csi_config.byte_swap_en = false;
+  csi_config.queue_items = 1;
+  
+  // Créer le contrôleur CSI
+  esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->cam_ctlr_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Échec création contrôleur CSI: %s", esp_err_to_name(ret));
+    return false;
+  }
+  
+  // Callbacks pour recevoir les frames
+  esp_cam_ctlr_evt_cbs_t cbs = {};
+  cbs.on_get_new_trans = [](esp_cam_ctlr_handle_t handle, 
+                             esp_cam_ctlr_trans_t *trans, 
+                             void *user_data) -> bool {
+    Tab5Camera *camera = (Tab5Camera*)user_data;
+    trans->buffer = camera->frame_buffer_.buffer;
+    trans->buflen = camera->frame_buffer_.length;
+    return true;
+  };
+  
+  cbs.on_trans_finished = [](esp_cam_ctlr_handle_t handle, 
+                              esp_cam_ctlr_trans_t *trans, 
+                              void *user_data) -> bool {
+    ESP_LOGV("csi", "Frame CSI reçue: %u bytes", trans->received_size);
+    return true;
+  };
+  
+  // Enregistrer les callbacks
+  ret = esp_cam_ctlr_register_event_callbacks(this->cam_ctlr_handle_, &cbs, this);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Échec enregistrement callbacks: %s", esp_err_to_name(ret));
+    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    this->cam_ctlr_handle_ = nullptr;
+    return false;
+  }
+  
+  // Activer le contrôleur
+  ret = esp_cam_ctlr_enable(this->cam_ctlr_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Échec activation contrôleur: %s", esp_err_to_name(ret));
+    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    this->cam_ctlr_handle_ = nullptr;
+    return false;
+  }
+  
+  // Démarrer la réception
+  ret = esp_cam_ctlr_start(this->cam_ctlr_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Échec démarrage CSI: %s", esp_err_to_name(ret));
+    esp_cam_ctlr_disable(this->cam_ctlr_handle_);
+    esp_cam_del_ctlr(this->cam_ctlr_handle_);
+    this->cam_ctlr_handle_ = nullptr;
+    return false;
+  }
+  
+  this->csi_initialized_ = true;
+  ESP_LOGI(TAG, "✓ Interface CSI initialisée: %ux%u, 2 lanes @ 800 Mbps", 
+           this->frame_buffer_.width, this->frame_buffer_.height);
+  return true;
+  
+  #else
+  ESP_LOGW(TAG, "ISP non activé dans sdkconfig");
+  return false;
+  #endif
+}
+
+bool Tab5Camera::capture_csi_frame_() {
+  #ifdef CONFIG_ISP_ENABLED
+  
+  if (this->cam_ctlr_handle_ == nullptr) {
+    return false;
+  }
+  
+  // Recevoir une frame
+  esp_cam_ctlr_trans_t trans = {};
+  esp_err_t ret = esp_cam_ctlr_receive(this->cam_ctlr_handle_, &trans, 100);
+  
+  if (ret == ESP_OK) {
+    return true;
+  } else if (ret == ESP_ERR_TIMEOUT) {
+    ESP_LOGV(TAG, "Timeout CSI");
+    return false;
+  } else {
+    ESP_LOGW(TAG, "Erreur CSI: %s", esp_err_to_name(ret));
+    return false;
+  }
+  
+  #else
+  return false;
+  #endif
 }
 
 bool Tab5Camera::take_snapshot() {
