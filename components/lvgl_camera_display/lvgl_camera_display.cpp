@@ -16,13 +16,9 @@ void LVGLCameraDisplay::setup() {
     return;
   }
   
-  if (this->canvas_obj_ == nullptr) {
-    ESP_LOGE(TAG, "Canvas LVGL non configuré");
-    this->mark_failed();
-    return;
-  }
-  
-  ESP_LOGI(TAG, "LVGL Camera Display initialisé");
+  // Le canvas sera configuré plus tard via configure_canvas()
+  // ou directement dans le loop quand LVGL est prêt
+  ESP_LOGI(TAG, "LVGL Camera Display initialisé (canvas ID: %s)", this->canvas_id_.c_str());
 }
 
 void LVGLCameraDisplay::loop() {
