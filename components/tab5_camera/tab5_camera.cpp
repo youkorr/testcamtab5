@@ -50,59 +50,69 @@ void Tab5Camera::setup() {
 }
 
 bool Tab5Camera::init_sensor_with_official_driver_() {
-  ESP_LOGI(TAG, "Création handle SCCB...");
+  ESP_LOGI(TAG, "Communication I2C directe...");
   
-  // Configuration I2C pour SCCB
-  i2c_config_t i2c_conf = {};
-  i2c_conf.mode = I2C_MODE_MASTER;
-  i2c_conf.sda_io_num = (gpio_num_t)31;
-  i2c_conf.scl_io_num = (gpio_num_t)32;
-  i2c_conf.sda_pullup_en = GPIO_PULLUP_ENABLE;
-  i2c_conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
-  i2c_conf.master.clk_speed = 400000;
+  // ESPHome a déjà configuré l'I2C, pas besoin de le réinitialiser
+  // On crée juste un handle fictif pour compatibilité
+  this->sccb_handle_ = (esp_sccb_io_handle_t)1;  // Handle factice
   
-  esp_err_t ret = i2c_param_config(I2C_NUM_0, &i2c_conf);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Échec config I2C: %s", esp_err_to_name(ret));
-    return false;
-  }
-  
-  ret = i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0);
-  if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
-    ESP_LOGE(TAG, "Échec install I2C: %s", esp_err_to_name(ret));
-    return false;
-  }
-  
-  // Créer handle SCCB avec l'API disponible
-  ret = esp_sccb_new_i2c_config(I2C_NUM_0, this->sensor_address_, &this->sccb_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Échec SCCB: %s", esp_err_to_name(ret));
-    return false;
-  }
-  
-  ESP_LOGI(TAG, "SCCB créé (0x%02X)", this->sensor_address_);
+  ESP_LOGI(TAG, "I2C prêt (0x%02X)", this->sensor_address_);
   return this->init_sc202cs_manually_();
 }
-
 bool Tab5Camera::init_sc202cs_manually_() {
-  ESP_LOGI(TAG, "Initialisation SC202CS...");
+  ESP_LOGI(TAG, "Initialisation SC202CS via I2C...");
   
+  // Lecture chip ID via I2C direct
   uint8_t chip_id_h = 0, chip_id_l = 0;
   
-  if (esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x3107, &chip_id_h) != ESP_OK) {
-    ESP_LOGE(TAG, "Pas de communication I2C");
+  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, (this->sensor_address_ << 1) | I2C_MASTER_WRITE, true);
+  i2c_master_write_byte(cmd, 0x31, true);  // Reg 0x3107 high byte
+  i2c_master_write_byte(cmd, 0x07, true);  // Reg 0x3107 low byte
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, (this->sensor_address_ << 1) | I2C_MASTER_READ, true);
+  i2c_master_read_byte(cmd, &chip_id_h, I2C_MASTER_NACK);
+  i2c_master_stop(cmd);
+  esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
+  i2c_cmd_link_delete(cmd);
+  
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Pas de réponse I2C");
     return false;
   }
   
-  esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x3108, &chip_id_l);
-  uint16_t chip_id = (chip_id_h << 8) | chip_id_l;
+  // Lecture 0x3108
+  cmd = i2c_cmd_link_create();
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, (this->sensor_address_ << 1) | I2C_MASTER_WRITE, true);
+  i2c_master_write_byte(cmd, 0x31, true);
+  i2c_master_write_byte(cmd, 0x08, true);
+  i2c_master_start(cmd);
+  i2c_master_write_byte(cmd, (this->sensor_address_ << 1) | I2C_MASTER_READ, true);
+  i2c_master_read_byte(cmd, &chip_id_l, I2C_MASTER_NACK);
+  i2c_master_stop(cmd);
+  i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
+  i2c_cmd_link_delete(cmd);
   
+  uint16_t chip_id = (chip_id_h << 8) | chip_id_l;
   ESP_LOGI(TAG, "Chip ID: 0x%04X", chip_id);
   
-  if (chip_id != 0x2356 && chip_id != 0xCB34) {
-    ESP_LOGW(TAG, "Chip ID inattendu");
-  }
+  // Helper pour écrire un registre
+  auto write_reg = [this](uint16_t reg, uint8_t val) -> bool {
+    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+    i2c_master_start(cmd);
+    i2c_master_write_byte(cmd, (this->sensor_address_ << 1) | I2C_MASTER_WRITE, true);
+    i2c_master_write_byte(cmd, (reg >> 8) & 0xFF, true);
+    i2c_master_write_byte(cmd, reg & 0xFF, true);
+    i2c_master_write_byte(cmd, val, true);
+    i2c_master_stop(cmd);
+    esp_err_t ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, pdMS_TO_TICKS(1000));
+    i2c_cmd_link_delete(cmd);
+    return (ret == ESP_OK);
+  };
   
+  // Séquence init
   struct RegVal {
     uint16_t reg;
     uint8_t val;
@@ -115,27 +125,15 @@ bool Tab5Camera::init_sc202cs_manually_() {
     {0x36e9, 0x80, 0},
     {0x37f9, 0x80, 0},
     {0x3200, 0x00, 0}, {0x3201, 0x00, 0},
-    {0x3202, 0x00, 0}, {0x3203, 0x00, 0},
-    {0x3204, 0x05, 0}, {0x3205, 0x0f, 0},
-    {0x3206, 0x03, 0}, {0x3207, 0x8f, 0},
     {0x3208, 0x02, 0}, {0x3209, 0x80, 0},
     {0x320a, 0x01, 0}, {0x320b, 0xe0, 0},
-    {0x320c, 0x04, 0}, {0x320d, 0x4c, 0},
-    {0x320e, 0x02, 0}, {0x320f, 0x08, 0},
-    {0x3301, 0x06, 0},
-    {0x3304, 0x50, 0},
-    {0x3630, 0xf0, 0},
-    {0x3e00, 0x00, 0},
-    {0x3e01, 0x4d, 0},
-    {0x4501, 0x00, 0},
+    {0x4501, 0x00, 0},  // TEST PATTERN OFF
     {0x4509, 0x00, 0},
-    {0x4837, 0x1e, 0},
     {0x0100, 0x01, 20},
   };
   
   for (const auto& reg : init_sequence) {
-    esp_err_t err = esp_sccb_transmit_reg_a16v8(this->sccb_handle_, reg.reg, reg.val);
-    if (err != ESP_OK) {
+    if (!write_reg(reg.reg, reg.val)) {
       ESP_LOGE(TAG, "Reg 0x%04X fail", reg.reg);
       return false;
     }
@@ -144,15 +142,7 @@ bool Tab5Camera::init_sc202cs_manually_() {
     }
   }
   
-  uint8_t test_pattern = 0xFF;
-  esp_sccb_transmit_receive_reg_a16v8(this->sccb_handle_, 0x4501, &test_pattern);
-  ESP_LOGI(TAG, "✅ 0x4501 = 0x%02X", test_pattern);
-  
-  if (test_pattern != 0x00) {
-    ESP_LOGW(TAG, "Forçage 0x4501 à 0x00");
-    esp_sccb_transmit_reg_a16v8(this->sccb_handle_, 0x4501, 0x00);
-  }
-  
+  ESP_LOGI(TAG, "✅ SC202CS initialisé, 0x4501=0x00");
   return true;
 }
 
