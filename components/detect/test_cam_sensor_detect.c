@@ -12,6 +12,7 @@
 #include "esp_sccb_intf.h"
 #include "esp_sccb_i2c.h"
 #include "esp_cam_sensor.h"
+#include "../tab5_camera/tab5_camera.h"
 
 #include "unity.h"
 #include "unity_test_utils.h"
