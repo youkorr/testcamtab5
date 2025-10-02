@@ -451,20 +451,38 @@ bool Tab5Camera::init_csi_interface_() {
     return false;
   }
   
+  // CORRECTION CRITIQUE : Callbacks avec gestion correcte du buffer
   esp_cam_ctlr_evt_cbs_t cbs = {};
+  
   cbs.on_get_new_trans = [](esp_cam_ctlr_handle_t handle, 
                              esp_cam_ctlr_trans_t *trans, 
                              void *user_data) -> bool {
+    if (trans == nullptr || user_data == nullptr) {
+      return false;
+    }
+    
     Tab5Camera *camera = (Tab5Camera*)user_data;
+    
+    // Vérifier que le buffer existe
+    if (camera->frame_buffer_.buffer == nullptr || camera->frame_buffer_.length == 0) {
+      ESP_LOGE("csi_callback", "Buffer frame non alloué !");
+      return false;
+    }
+    
+    // Assigner le buffer pour la réception
     trans->buffer = camera->frame_buffer_.buffer;
     trans->buflen = camera->frame_buffer_.length;
+    
+    ESP_LOGV("csi_callback", "Buffer assigné: %p, taille: %u", trans->buffer, trans->buflen);
     return true;
   };
   
   cbs.on_trans_finished = [](esp_cam_ctlr_handle_t handle, 
                               esp_cam_ctlr_trans_t *trans, 
                               void *user_data) -> bool {
-    ESP_LOGV("csi", "Frame CSI reçue: %u bytes", trans->received_size);
+    if (trans != nullptr) {
+      ESP_LOGD("csi_callback", "Frame CSI reçue: %u bytes", trans->received_size);
+    }
     return true;
   };
   
@@ -494,8 +512,9 @@ bool Tab5Camera::init_csi_interface_() {
   }
   
   this->csi_initialized_ = true;
-  ESP_LOGI(TAG, "Interface CSI initialisée M5Stack: %ux%u, 1 lane @ 576 Mbps, RAW8→RGB565", 
-           this->frame_buffer_.width, this->frame_buffer_.height);
+  ESP_LOGI(TAG, "Interface CSI initialisée: %ux%u, buffer @ %p (%u bytes)", 
+           this->frame_buffer_.width, this->frame_buffer_.height,
+           this->frame_buffer_.buffer, this->frame_buffer_.length);
   return true;
   
   #else
