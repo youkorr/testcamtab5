@@ -3,7 +3,6 @@ idf_component_register(
         "tab5_camera.cpp"
     INCLUDE_DIRS 
         "."
-        "${COMPONENT_PATH}/../esp_cam_sensor_esphome"
     REQUIRES
         esphome
         esp_driver_i2c
