@@ -45,12 +45,16 @@ void Tab5Camera::setup() {
   for (uint8_t addr : test_addresses) {
     ESP_LOGI(TAG, "Test adresse 0x%02X...", addr);
     
-    // Scan I2C simple
-    if (this->parent_->write(addr, nullptr, 0) == i2c::ERROR_OK) {
+    // Changer temporairement l'adresse I2C
+    this->set_i2c_address(addr);
+    
+    // Test ping I2C
+    uint8_t dummy;
+    if (this->read(&dummy, 1) == i2c::ERROR_OK) {
       ESP_LOGI(TAG, "  ✓ Device répond à 0x%02X", addr);
       
       // Essayer de lire le chip ID
-      uint16_t chip_id = this->read_chip_id_(addr);
+      uint16_t chip_id = this->read_chip_id_();
       ESP_LOGI(TAG, "  Chip ID @ 0x%02X: 0x%04X", addr, chip_id);
       
       if (chip_id == SC2356_CHIP_ID_VALUE || chip_id == 0xCB5C || chip_id == 0x2356) {
@@ -61,6 +65,9 @@ void Tab5Camera::setup() {
       }
     }
   }
+  
+  // Remettre l'adresse configurée
+  this->set_i2c_address(this->sensor_address_);
   
   if (!this->sensor_detected_) {
     ESP_LOGW(TAG, "⚠️  SC202CS non détecté - mode test pattern");
@@ -75,7 +82,7 @@ void Tab5Camera::setup() {
            this->sensor_detected_ ? "DÉTECTÉ" : "TEST");
 }
 
-uint16_t Tab5Camera::read_chip_id_(uint8_t addr) {
+uint16_t Tab5Camera::read_chip_id_() {
   uint8_t id_h = 0, id_l = 0;
   
   // Essayer plusieurs registres de chip ID possibles
@@ -84,16 +91,16 @@ uint16_t Tab5Camera::read_chip_id_(uint8_t addr) {
   for (uint16_t reg : id_regs) {
     uint8_t reg_buf[2] = {(uint8_t)(reg >> 8), (uint8_t)(reg & 0xFF)};
     
-    if (this->parent_->write(addr, reg_buf, 2, false) == i2c::ERROR_OK) {
-      if (this->parent_->read(addr, &id_h, 1) == i2c::ERROR_OK) {
-        this->parent_->write(addr, reg_buf, 2, false);
-        this->parent_->read(addr, &id_l, 1);
-        
-        uint16_t chip_id = (id_h << 8) | id_l;
-        if (chip_id != 0x0000 && chip_id != 0xFFFF) {
-          ESP_LOGD(TAG, "  Reg 0x%04X = 0x%04X", reg, chip_id);
-          return chip_id;
-        }
+    // Utiliser write_read pour lecture I2C
+    if (this->write_read(reg_buf, 2, &id_h, 1) == i2c::ERROR_OK) {
+      // Lire le byte suivant
+      uint8_t reg_buf_l[2] = {(uint8_t)(reg >> 8), (uint8_t)((reg + 1) & 0xFF)};
+      this->write_read(reg_buf_l, 2, &id_l, 1);
+      
+      uint16_t chip_id = (id_h << 8) | id_l;
+      if (chip_id != 0x0000 && chip_id != 0xFFFF) {
+        ESP_LOGD(TAG, "  Reg 0x%04X = 0x%04X", reg, chip_id);
+        return chip_id;
       }
     }
   }
@@ -103,10 +110,7 @@ uint16_t Tab5Camera::read_chip_id_(uint8_t addr) {
 
 esp_err_t Tab5Camera::read_register16_(uint16_t reg, uint8_t *value) {
   uint8_t reg_buf[2] = {(uint8_t)(reg >> 8), (uint8_t)(reg & 0xFF)};
-  if (this->write(reg_buf, 2, false) != ESP_OK) {
-    return ESP_FAIL;
-  }
-  return this->read(value, 1);
+  return this->write_read(reg_buf, 2, value, 1) == i2c::ERROR_OK ? ESP_OK : ESP_FAIL;
 }
 
 esp_err_t Tab5Camera::write_register16_(uint16_t reg, uint8_t value) {
@@ -208,7 +212,6 @@ void Tab5Camera::dump_config() {
 
 }  // namespace tab5_camera
 }  // namespace esphome
-
 
 
 
