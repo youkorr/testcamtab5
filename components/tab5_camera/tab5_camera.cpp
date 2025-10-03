@@ -689,8 +689,12 @@ bool IRAM_ATTR Tab5Camera::on_csi_new_frame_(
   void *user_data
 ) {
   Tab5Camera *cam = (Tab5Camera*)user_data;
+  
+  // Fournir le buffer pour la prochaine frame
+  // Utilise toujours le buffer courant pour l'acquisition
   trans->buffer = cam->frame_buffers_[cam->buffer_index_];
   trans->buflen = cam->frame_buffer_size_;
+  
   return false;
 }
 
@@ -702,18 +706,14 @@ bool IRAM_ATTR Tab5Camera::on_csi_frame_done_(
   Tab5Camera *cam = (Tab5Camera*)user_data;
   
   if (trans->received_size > 0) {
-    // Alterner entre les deux buffers
-    cam->buffer_index_ = (cam->buffer_index_ + 1) % 2;
-    cam->current_frame_buffer_ = cam->frame_buffers_[cam->buffer_index_];
+    // Marquer la frame comme prête AVANT de changer de buffer
     cam->frame_ready_ = true;
     
-    // CRITIQUE: Relancer immédiatement la réception de la prochaine frame
-    // Sans cela, on ne reçoit qu'UNE SEULE frame
-    esp_cam_ctlr_trans_t next_trans = {};
-    next_trans.buffer = cam->frame_buffers_[cam->buffer_index_];
-    next_trans.buflen = cam->frame_buffer_size_;
+    // Alterner vers l'autre buffer pour la prochaine frame
+    cam->buffer_index_ = (cam->buffer_index_ + 1) % 2;
     
-    esp_cam_ctlr_receive(handle, &next_trans, 0);
+    // Le buffer actuel (celui qui vient d'être rempli) reste dans current_frame_buffer_
+    // jusqu'à ce que capture_frame() le marque comme consommé
   }
   
   return false;
@@ -750,7 +750,8 @@ bool Tab5Camera::start_streaming() {
     }
   }
   
-  // Démarrer CSI
+  // Démarrer CSI en mode continu
+  // Les callbacks on_csi_new_frame_ et on_csi_frame_done_ gèrent les buffers
   esp_err_t ret = esp_cam_ctlr_start(this->csi_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Start CSI failed: %d", ret);
@@ -758,22 +759,7 @@ bool Tab5Camera::start_streaming() {
   }
   
   this->streaming_ = true;
-  
-  // CRITIQUE : Démarrer la réception de frames
-  // Sans cela, les callbacks ne se déclenchent JAMAIS
-  esp_cam_ctlr_trans_t trans = {};
-  trans.buffer = this->frame_buffers_[0];
-  trans.buflen = this->frame_buffer_size_;
-  
-  ret = esp_cam_ctlr_receive(this->csi_handle_, &trans, 0);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Failed to start frame reception: %d", ret);
-    this->streaming_ = false;
-    esp_cam_ctlr_stop(this->csi_handle_);
-    return false;
-  }
-  
-  ESP_LOGI(TAG, "✅ Streaming actif + réception démarrée");
+  ESP_LOGI(TAG, "✅ Streaming actif (mode continu)");
   return true;
 }
 
@@ -795,12 +781,23 @@ bool Tab5Camera::stop_streaming() {
 }
 
 bool Tab5Camera::capture_frame() {
-  if (!this->streaming_ || !this->frame_ready_) {
+  // Retourne true s'il y a une nouvelle frame disponible
+  if (!this->streaming_) {
     return false;
   }
   
-  this->frame_ready_ = false;
-  return true;
+  // Vérifier atomiquement si une frame est prête
+  bool was_ready = this->frame_ready_;
+  if (was_ready) {
+    this->frame_ready_ = false;  // Marquer comme consommée
+    
+    // Mettre à jour le pointeur vers le buffer de la dernière frame complète
+    // Le buffer_index_ a déjà été incrémenté dans le callback
+    uint8_t last_complete_buffer = (this->buffer_index_ + 1) % 2;
+    this->current_frame_buffer_ = this->frame_buffers_[last_complete_buffer];
+  }
+  
+  return was_ready;
 }
 
 uint16_t Tab5Camera::get_image_width() const {
