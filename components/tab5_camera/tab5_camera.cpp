@@ -10,12 +10,10 @@
 
 extern "C" {
 #include "driver/i2c_master.h"
-#include "esp_cam_sensor.h"
-#include "esp_cam_sensor_detect.h"
 }
 
 // ============================================================================
-// DÉFINITIONS DES STRUCTURES MANQUANTES
+// DÉFINITIONS COMPLÈTES DES STRUCTURES CAMERA SENSOR
 // ============================================================================
 
 extern "C" {
@@ -31,6 +29,64 @@ typedef struct {
     uint32_t addr_bits_width;
     uint32_t val_bits_width;
 } sccb_i2c_config_t;
+
+// Structure pour l'ID du capteur
+typedef struct {
+    uint8_t midh;
+    uint8_t midl;
+    uint16_t pid;
+    uint8_t ver;
+} esp_cam_sensor_id_t;
+
+// Type de port du capteur
+typedef enum {
+    ESP_CAM_SENSOR_DVP,
+    ESP_CAM_SENSOR_MIPI_CSI,
+} esp_cam_sensor_port_t;
+
+// Forward declaration pour les opérations
+struct esp_cam_sensor_device_t;
+typedef struct esp_cam_sensor_ops_t {
+    int (*set_format)(struct esp_cam_sensor_device_t *dev, const void *format);
+    int (*get_format)(struct esp_cam_sensor_device_t *dev, void *format);
+    int (*priv_ioctl)(struct esp_cam_sensor_device_t *dev, uint32_t cmd, void *arg);
+    int (*del)(struct esp_cam_sensor_device_t *dev);
+} esp_cam_sensor_ops_t;
+
+// Structure principale du device
+typedef struct esp_cam_sensor_device_t {
+    char *name;
+    esp_sccb_io_handle_t sccb_handle;
+    int8_t xclk_pin;
+    int8_t reset_pin;
+    int8_t pwdn_pin;
+    esp_cam_sensor_port_t sensor_port;
+    const void *cur_format;
+    esp_cam_sensor_id_t id;
+    uint8_t stream_status;
+    const esp_cam_sensor_ops_t *ops;
+    void *priv;
+} esp_cam_sensor_device_t;
+
+// Configuration du capteur
+typedef struct {
+    esp_sccb_io_handle_t sccb_handle;
+    int8_t reset_pin;
+    int8_t pwdn_pin;
+    int8_t xclk_pin;
+    int32_t xclk_freq_hz;
+    esp_cam_sensor_port_t sensor_port;
+} esp_cam_sensor_config_t;
+
+// Type pour detect function
+typedef struct {
+    union {
+        esp_cam_sensor_device_t *(*detect)(void *);
+        esp_cam_sensor_device_t *(*fn)(void *);
+    };
+    esp_cam_sensor_port_t port;
+    uint16_t sccb_addr;
+} esp_cam_sensor_detect_fn_t;
 
 // ============================================================================
 // CODE COMPLET DU DRIVER SC202CS INTÉGRÉ
