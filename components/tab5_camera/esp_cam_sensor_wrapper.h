@@ -5,9 +5,9 @@
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
 extern "C" {
-  #include "../esp_cam_sensor_esphome/esp_cam_sensor.h"
-  #include "../esp_cam_sensor_esphome/esp_cam_sensor_detect.h"
-  #include "../esp_cam_sensor_esphome/esp_sccb_i2c.h"
+  #include "esp_cam_sensor.h"
+  #include "esp_cam_sensor_detect.h"
+  #include "esp_sccb_i2c.h"
 }
 #endif
 
