@@ -1,10 +1,11 @@
 version: "1.0.0"
-description: "Tab5 Camera with esp_video support"
+description: "Tab5 Camera with SC202CS support"
 
 dependencies:
   idf: ">=5.3"
   
-  espressif/esp_video:
-    version: "*"
-    git: https://github.com/espressif/esp-video-components.git
-    path: esp_video
+  espressif/esp_sccb_intf:
+    version: "^0.1.4"
+    
+  espressif/esp_cam_sensor:
+    version: "^0.5.1"
