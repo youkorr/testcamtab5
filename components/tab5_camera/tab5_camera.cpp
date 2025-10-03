@@ -3,10 +3,14 @@
 #include "esphome/core/application.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
+// Inclure les headers depuis esp_cam_sensor_esphome avec chemins relatifs
 extern "C" {
-  #include "esp_cam_sensor.h"
-  #include "esp_cam_sensor_detect.h"
-  #include "esp_sccb_i2c.h"
+  #include "../esp_cam_sensor_esphome/esp_cam_sensor.h"
+  #include "../esp_cam_sensor_esphome/esp_cam_sensor_detect.h"
+  #include "../esp_cam_sensor_esphome/esp_sccb_i2c.h"
+  #include "../esp_cam_sensor_esphome/esp_cam_sensor_types.h"
+  #include "../esp_cam_sensor_esphome/esp_sccb_intf.h"
+  #include "../esp_cam_sensor_esphome/esp_sccb_types.h"
 }
 
 // Inline wrapper functions
@@ -135,7 +139,7 @@ bool Tab5Camera::init_sensor_() {
   int8_t reset = this->reset_pin_ ? this->reset_pin_->get_pin() : -1;
   int8_t pwdn = this->pwdn_pin_ ? this->pwdn_pin_->get_pin() : -1;
   
-  this->sensor_device_ = ESPCamSensorWrapper::detect_sensor(
+  this->sensor_device_ = detect_sensor_inline(
     i2c_handle, reset, pwdn, this->sensor_address_
   );
   
@@ -149,7 +153,7 @@ bool Tab5Camera::init_sensor_() {
   
   // Configurer le format du capteur
   esp_cam_sensor_format_t format;
-  if (ESPCamSensorWrapper::get_format(this->sensor_device_, &format) == ESP_OK) {
+  if (esp_cam_sensor_get_format(this->sensor_device_, &format) == ESP_OK) {
     ESP_LOGI(TAG, "  Format: %ux%u @ %ufps", format.width, format.height, format.fps);
   }
   
@@ -325,7 +329,8 @@ bool Tab5Camera::start_streaming() {
   ESP_LOGI(TAG, "Démarrage streaming");
   
   // Démarrer le capteur
-  esp_err_t ret = ESPCamSensorWrapper::start_stream(this->sensor_device_);
+  int enable = 1;
+  esp_err_t ret = esp_cam_sensor_ioctl(this->sensor_device_, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Start sensor failed: %d", ret);
     return false;
@@ -335,7 +340,8 @@ bool Tab5Camera::start_streaming() {
   ret = esp_cam_ctlr_start(this->csi_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Start CSI failed: %d", ret);
-    ESPCamSensorWrapper::stop_stream(this->sensor_device_);
+    enable = 0;
+    esp_cam_sensor_ioctl(this->sensor_device_, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
     return false;
   }
   
@@ -350,7 +356,8 @@ bool Tab5Camera::stop_streaming() {
   }
   
   esp_cam_ctlr_stop(this->csi_handle_);
-  ESPCamSensorWrapper::stop_stream(this->sensor_device_);
+  int enable = 0;
+  esp_cam_sensor_ioctl(this->sensor_device_, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
   
   this->streaming_ = false;
   ESP_LOGI(TAG, "⏹ Streaming arrêté");
