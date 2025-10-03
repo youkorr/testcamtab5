@@ -3,15 +3,7 @@
 #include "esphome/core/application.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-// Inclure les headers depuis esp_cam_sensor_esphome avec chemins relatifs
-extern "C" {
-  #include "../esp_cam_sensor_esphome/esp_cam_sensor.h"
-  #include "../esp_cam_sensor_esphome/esp_cam_sensor_detect.h"
-  #include "../esp_cam_sensor_esphome/esp_sccb_i2c.h"
-  #include "../esp_cam_sensor_esphome/esp_cam_sensor_types.h"
-  #include "../esp_cam_sensor_esphome/esp_sccb_intf.h"
-  #include "../esp_cam_sensor_esphome/esp_sccb_types.h"
-}
+#include "tab5_camera_sensor.h"
 
 // Inline wrapper functions
 namespace {
