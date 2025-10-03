@@ -5,9 +5,9 @@
 #ifdef USE_ESP32_VARIANT_ESP32P4
 #include "tab5_camera_sensor.h"
 
-// Inclure le driver SC202CS  
+// Inclure le driver SC202CS via le nom du composant
 extern "C" {
-  #include "../../sensors_sc202cs/sc202cs.h"
+  #include "sc202cs.h"
   #include "esp_sccb_intf.h"
   #include "esp_sccb_i2c.h"
 }
