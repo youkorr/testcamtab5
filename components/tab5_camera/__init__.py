@@ -58,7 +58,7 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(Tab5Camera),
             cv.Optional(CONF_NAME, default="Tab5 Camera"): cv.string,
-            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=36): pins.gpio_output_pin_schema,
+            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=36): cv.int_range(min=0, max=50),
             cv.Optional(CONF_FREQUENCY, default=24000000): cv.int_range(min=6000000, max=40000000),
             cv.Optional(CONF_RESET_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_ADDRESS_SENSOR_SC202CS, default=0x36): cv.i2c_address,
@@ -83,8 +83,8 @@ async def to_code(config):
     
     cg.add(var.set_name(config[CONF_NAME]))
     
-    ext_clock_pin = await cg.gpio_pin_expression(config[CONF_EXTERNAL_CLOCK_PIN])
-    cg.add(var.set_external_clock_pin(ext_clock_pin))
+    # Juste passer le numéro de pin au lieu d'un GPIOPin
+    cg.add(var.set_external_clock_pin(config[CONF_EXTERNAL_CLOCK_PIN]))
     cg.add(var.set_external_clock_frequency(config[CONF_FREQUENCY]))
     
     cg.add(var.set_sensor_address(config[CONF_ADDRESS_SENSOR_SC202CS]))
@@ -104,8 +104,11 @@ async def to_code(config):
     cg.add_build_flag("-DBOARD_HAS_PSRAM")
     cg.add_build_flag("-DCONFIG_CAMERA_CORE0=1")
     cg.add_build_flag("-DCONFIG_CAMERA_SC202CS=1")
+    cg.add_build_flag("-DCONFIG_CAMERA_SC202CS_ANA_GAIN_PRIORITY=1")
+    cg.add_build_flag("-DCONFIG_CAMERA_SC202CS_ABSOLUTE_GAIN_LIMIT=63008")
+    cg.add_build_flag("-DCONFIG_CAMERA_SC202CS_MAX_SUPPORT=1")
+    cg.add_build_flag("-DCONFIG_CAMERA_SC202CS_MIPI_IF_FORMAT_INDEX_DAFAULT=0")
     cg.add_build_flag("-DUSE_ESP32_VARIANT_ESP32P4")
-    
 
 
 
