@@ -1,5 +1,6 @@
 // Implémentation des fonctions manquantes du sensor
 // Ce fichier est inclus directement dans tab5_camera.cpp
+// Les fonctions sont déclarées static pour éviter les conflits de linking
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
 
@@ -13,10 +14,10 @@ struct esp_sccb_io_t {
     uint32_t val_bits_width;
 };
 
-// Implémentation de sccb_new_i2c_io
-esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle, 
-                          const sccb_i2c_config_t *config,
-                          esp_sccb_io_handle_t *io_handle) {
+// Implémentation de sccb_new_i2c_io (static pour éviter conflits)
+static esp_err_t sccb_new_i2c_io_impl(i2c_master_bus_handle_t bus_handle, 
+                                       const sccb_i2c_config_t *config,
+                                       esp_sccb_io_handle_t *io_handle) {
     if (!bus_handle || !config || !io_handle) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -48,9 +49,16 @@ esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle,
     return ESP_OK;
 }
 
-// Implémentation de esp_cam_sensor_get_format
-esp_err_t esp_cam_sensor_get_format(esp_cam_sensor_device_t *dev, 
-                                    esp_cam_sensor_format_t *format) {
+// Wrapper externe pour sccb_new_i2c_io
+extern "C" esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle, 
+                                      const sccb_i2c_config_t *config,
+                                      esp_sccb_io_handle_t *io_handle) {
+    return sccb_new_i2c_io_impl(bus_handle, config, io_handle);
+}
+
+// Implémentation de esp_cam_sensor_get_format (static)
+static esp_err_t esp_cam_sensor_get_format_impl(esp_cam_sensor_device_t *dev, 
+                                                 esp_cam_sensor_format_t *format) {
     if (!dev || !format || !dev->ops) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -62,10 +70,16 @@ esp_err_t esp_cam_sensor_get_format(esp_cam_sensor_device_t *dev,
     return dev->ops->get_format(dev, format);
 }
 
-// Implémentation de esp_cam_sensor_ioctl
-esp_err_t esp_cam_sensor_ioctl(esp_cam_sensor_device_t *dev, 
-                               uint32_t cmd, 
-                               void *arg) {
+// Wrapper externe pour esp_cam_sensor_get_format
+extern "C" esp_err_t esp_cam_sensor_get_format(esp_cam_sensor_device_t *dev, 
+                                                 esp_cam_sensor_format_t *format) {
+    return esp_cam_sensor_get_format_impl(dev, format);
+}
+
+// Implémentation de esp_cam_sensor_ioctl (static)
+static esp_err_t esp_cam_sensor_ioctl_impl(esp_cam_sensor_device_t *dev, 
+                                            uint32_t cmd, 
+                                            void *arg) {
     if (!dev || !dev->ops) {
         return ESP_ERR_INVALID_ARG;
     }
@@ -75,6 +89,13 @@ esp_err_t esp_cam_sensor_ioctl(esp_cam_sensor_device_t *dev,
     }
     
     return dev->ops->priv_ioctl(dev, cmd, arg);
+}
+
+// Wrapper externe pour esp_cam_sensor_ioctl
+extern "C" esp_err_t esp_cam_sensor_ioctl(esp_cam_sensor_device_t *dev, 
+                                           uint32_t cmd, 
+                                           void *arg) {
+    return esp_cam_sensor_ioctl_impl(dev, cmd, arg);
 }
 
 // Déclaration des symboles externes - ils seront définis par le linker
