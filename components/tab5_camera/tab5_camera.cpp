@@ -301,10 +301,14 @@ bool Tab5Camera::start_streaming() {
   ESP_LOGI(TAG, "▶️  Démarrage streaming");
   this->streaming_ = true;
   
+#ifdef USE_ESP32_VARIANT_ESP32P4
   if (this->sensor_detected_ && this->csi_handle_) {
     esp_cam_ctlr_start(this->csi_handle_);
-    isp_start(this->isp_handle_);
+    if (this->isp_handle_) {
+      isp_processor_enable(this->isp_handle_);
+    }
   }
+#endif
   
   return true;
 }
@@ -313,10 +317,14 @@ bool Tab5Camera::stop_streaming() {
   ESP_LOGI(TAG, "⏹️  Arrêt streaming");
   this->streaming_ = false;
   
+#ifdef USE_ESP32_VARIANT_ESP32P4
   if (this->sensor_detected_ && this->csi_handle_) {
-    isp_stop(this->isp_handle_);
+    if (this->isp_handle_) {
+      isp_processor_disable(this->isp_handle_);
+    }
     esp_cam_ctlr_stop(this->csi_handle_);
   }
+#endif
   
   return true;
 }
