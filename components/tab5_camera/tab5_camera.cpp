@@ -3,13 +3,15 @@
 #include "esphome/core/application.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
+// Inclure d'abord les headers nécessaires
 #include "tab5_camera_sensor.h"
 
-// Inclure le driver SC202CS via le nom du composant
+// Inclure directement tout le code du driver SC202CS
 extern "C" {
-  #include "sc202cs.h"
-  #include "esp_sccb_intf.h"
-  #include "esp_sccb_i2c.h"
+  #include "../sensors_sc202cs/sc202cs_types.h"
+  #include "../sensors_sc202cs/sc202cs_regs.h"
+  #include "../sensors_sc202cs/sc202cs_settings.h"
+  #include "../sensors_sc202cs/sc202cs.c"
 }
 
 #include "tab5_camera_sensor_impl.cpp"
