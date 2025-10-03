@@ -5,5 +5,7 @@ idf_component_register(
         esp_driver_i2c
         esp_driver_isp
         esp_mm
-        esp_cam_ctlr
+        esp_driver_cam
+    PRIV_REQUIRES
+        esphome
 )
