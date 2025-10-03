@@ -1,15 +1,15 @@
-#include "esp_cam_sensor.h"
+#include "esp_cam_sensor_wrapper.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
 
-
+#include "esp_cam_sensor.h"
 
 namespace esphome {
 namespace esp_cam_sensor_esphome {
 
 static const char *const TAG = "esp_cam_sensor";
 
-esp_cam_sensor_device_t* ESPCamSensor::detect_sensor(
+esp_cam_sensor_device_t* ESPCamSensorWrapper::detect_sensor(
   i2c_master_bus_handle_t i2c_handle,
   int8_t reset_pin,
   int8_t pwdn_pin,
@@ -55,26 +55,26 @@ esp_cam_sensor_device_t* ESPCamSensor::detect_sensor(
   return nullptr;
 }
 
-esp_err_t ESPCamSensor::set_format(
+esp_err_t ESPCamSensorWrapper::set_format(
   esp_cam_sensor_device_t* dev,
   const esp_cam_sensor_format_t* format
 ) {
   return esp_cam_sensor_set_format(dev, format);
 }
 
-esp_err_t ESPCamSensor::get_format(
+esp_err_t ESPCamSensorWrapper::get_format(
   esp_cam_sensor_device_t* dev,
   esp_cam_sensor_format_t* format
 ) {
   return esp_cam_sensor_get_format(dev, format);
 }
 
-esp_err_t ESPCamSensor::start_stream(esp_cam_sensor_device_t* dev) {
+esp_err_t ESPCamSensorWrapper::start_stream(esp_cam_sensor_device_t* dev) {
   int enable = 1;
   return esp_cam_sensor_ioctl(dev, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
 }
 
-esp_err_t ESPCamSensor::stop_stream(esp_cam_sensor_device_t* dev) {
+esp_err_t ESPCamSensorWrapper::stop_stream(esp_cam_sensor_device_t* dev) {
   int enable = 0;
   return esp_cam_sensor_ioctl(dev, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
 }
