@@ -56,6 +56,19 @@ typedef struct {
 
 struct _esp_cam_sensor_ops;
 
+// Structure d'opérations du capteur
+typedef struct _esp_cam_sensor_ops {
+    int (*query_para_desc)(struct esp_cam_sensor_device_t *dev, void *qdesc);
+    int (*get_para_value)(struct esp_cam_sensor_device_t *dev, uint32_t id, void *arg, size_t size);
+    int (*set_para_value)(struct esp_cam_sensor_device_t *dev, uint32_t id, const void *arg, size_t size);
+    int (*query_support_formats)(struct esp_cam_sensor_device_t *dev, void *parry);
+    int (*query_support_capability)(struct esp_cam_sensor_device_t *dev, void *arg);
+    int (*set_format)(struct esp_cam_sensor_device_t *dev, const void *format);
+    int (*get_format)(struct esp_cam_sensor_device_t *dev, void *format);
+    int (*priv_ioctl)(struct esp_cam_sensor_device_t *dev, uint32_t cmd, void *arg);
+    int (*del)(struct esp_cam_sensor_device_t *dev);
+} esp_cam_sensor_ops_t;
+
 // Structure complète (pas typedef pour éviter les conflits)
 struct esp_cam_sensor_device_t {
     char *name;
@@ -67,7 +80,7 @@ struct esp_cam_sensor_device_t {
     const void *cur_format;
     esp_cam_sensor_id_t id;
     uint8_t stream_status;
-    const struct _esp_cam_sensor_ops *ops;
+    const esp_cam_sensor_ops_t *ops;
     void *priv;
 };
 
