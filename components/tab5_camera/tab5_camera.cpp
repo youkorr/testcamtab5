@@ -216,17 +216,17 @@ static const sc202cs_reginfo_t init_reglist_640x480[] = {
 // IMPLÉMENTATIONS SCCB ET SENSOR
 // ============================================================================
 
-// Structure SCCB IO interne
+// Structure SCCB IO interne (utilise ESPHome I2C au lieu d'ESP-IDF)
 struct esp_sccb_io_t {
-    i2c_master_dev_handle_t i2c_dev;
+    esphome::i2c::I2CDevice *i2c_device;  // Pointeur vers le device ESPHome
     uint32_t addr_bits_width;
     uint32_t val_bits_width;
 };
 
 // Forward declarations
-esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle, 
-                          const sccb_i2c_config_t *config,
-                          esp_sccb_io_handle_t *io_handle);
+esp_err_t sccb_new_i2c_io_esphome(esphome::i2c::I2CDevice *i2c_device,
+                                   const sccb_i2c_config_t *config,
+                                   esp_sccb_io_handle_t *io_handle);
 
 esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle, 
                                        uint16_t reg_addr, 
@@ -236,32 +236,21 @@ esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle,
                                               uint16_t reg_addr, 
                                               uint8_t *reg_val);
 
-// Implémentation de sccb_new_i2c_io
-esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle, 
-                          const sccb_i2c_config_t *config,
-                          esp_sccb_io_handle_t *io_handle) {
-    if (!bus_handle || !config || !io_handle) {
+// Implémentation de sccb_new_i2c_io pour ESPHome
+esp_err_t sccb_new_i2c_io_esphome(esphome::i2c::I2CDevice *i2c_device,
+                                   const sccb_i2c_config_t *config,
+                                   esp_sccb_io_handle_t *io_handle) {
+    if (!i2c_device || !config || !io_handle) {
         return ESP_ERR_INVALID_ARG;
     }
     
-    i2c_device_config_t dev_cfg = {};
-    dev_cfg.dev_addr_length = config->dev_addr_length;
-    dev_cfg.device_address = config->device_address;
-    dev_cfg.scl_speed_hz = config->scl_speed_hz;
-    
-    i2c_master_dev_handle_t dev_handle;
-    esp_err_t ret = i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
-    if (ret != ESP_OK) {
-        return ret;
-    }
-    
+    // Allouer la structure SCCB IO
     esp_sccb_io_t *sccb = (esp_sccb_io_t*)malloc(sizeof(esp_sccb_io_t));
     if (!sccb) {
-        i2c_master_bus_rm_device(dev_handle);
         return ESP_ERR_NO_MEM;
     }
     
-    sccb->i2c_dev = dev_handle;
+    sccb->i2c_device = i2c_device;
     sccb->addr_bits_width = config->addr_bits_width ? config->addr_bits_width : 8;
     sccb->val_bits_width = config->val_bits_width ? config->val_bits_width : 8;
     
@@ -295,36 +284,45 @@ esp_err_t esp_cam_sensor_ioctl(esp_cam_sensor_device_t *dev,
 }
 
 // Implémentations des fonctions SCCB pour communication I2C
+// Utilise directement les fonctions ESPHome I2C au lieu du driver ESP-IDF
 esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle, 
                                        uint16_t reg_addr, 
                                        uint8_t reg_val) {
-    if (!handle || !handle->i2c_dev) {
+    if (!handle || !handle->i2c_device) {
         return ESP_ERR_INVALID_ARG;
     }
     
-    uint8_t write_buf[3];
-    write_buf[0] = (reg_addr >> 8) & 0xFF;
-    write_buf[1] = reg_addr & 0xFF;
-    write_buf[2] = reg_val;
+    // Écrire via ESPHome I2C
+    uint8_t data[3] = {
+        (uint8_t)((reg_addr >> 8) & 0xFF),
+        (uint8_t)(reg_addr & 0xFF),
+        reg_val
+    };
     
-    return i2c_master_transmit(handle->i2c_dev, write_buf, 3, -1);
+    esphome::ErrorCode err = handle->i2c_device->write(data, 3);
+    return (err == esphome::ERROR_OK) ? ESP_OK : ESP_FAIL;
 }
 
 esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle, 
                                               uint16_t reg_addr, 
                                               uint8_t *reg_val) {
-    if (!handle || !handle->i2c_dev || !reg_val) {
+    if (!handle || !handle->i2c_device || !reg_val) {
         return ESP_ERR_INVALID_ARG;
     }
     
-    uint8_t reg_addr_buf[2];
-    reg_addr_buf[0] = (reg_addr >> 8) & 0xFF;
-    reg_addr_buf[1] = reg_addr & 0xFF;
+    // Écrire l'adresse puis lire via ESPHome I2C
+    uint8_t addr_buf[2] = {
+        (uint8_t)((reg_addr >> 8) & 0xFF),
+        (uint8_t)(reg_addr & 0xFF)
+    };
     
-    return i2c_master_transmit_receive(handle->i2c_dev, 
-                                       reg_addr_buf, 2, 
-                                       reg_val, 1, 
-                                       -1);
+    esphome::ErrorCode err = handle->i2c_device->write(addr_buf, 2, false);
+    if (err != esphome::ERROR_OK) {
+        return ESP_FAIL;
+    }
+    
+    err = handle->i2c_device->read(reg_val, 1);
+    return (err == esphome::ERROR_OK) ? ESP_OK : ESP_FAIL;
 }
 
 // Symboles faibles pour éviter les erreurs de linking (en dehors de extern "C")
@@ -526,20 +524,8 @@ void Tab5Camera::setup() {
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Init capteur SC202CS");
   
-  // Créer un bus I2C maître pour le capteur
-  i2c_master_bus_config_t bus_config = {};
-  bus_config.i2c_port = I2C_NUM_0;
-  bus_config.sda_io_num = (gpio_num_t)this->i2c_sda_pin_;
-  bus_config.scl_io_num = (gpio_num_t)this->i2c_scl_pin_;
-  bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
-  bus_config.flags.enable_internal_pullup = true;
-  
-  i2c_master_bus_handle_t bus_handle;
-  esp_err_t ret = i2c_new_master_bus(&bus_config, &bus_handle);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "I2C bus init failed: %d", ret);
-    return false;
-  }
+  // Utiliser directement le device I2C d'ESPHome (this hérite de I2CDevice)
+  // Pas besoin de créer un nouveau bus
   
   // Configurer SCCB pour SC202CS
   sccb_i2c_config_t sccb_config = {};
@@ -550,11 +536,13 @@ bool Tab5Camera::init_sensor_() {
   sccb_config.val_bits_width = 8;
   
   esp_sccb_io_handle_t sccb_handle;
-  ret = sccb_new_i2c_io(bus_handle, &sccb_config, &sccb_handle);
+  esp_err_t ret = sccb_new_i2c_io_esphome(this, &sccb_config, &sccb_handle);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "SCCB init failed: %d", ret);
     return false;
   }
+  
+  ESP_LOGI(TAG, "✓ SCCB initialisé via ESPHome I2C");
   
   // Configurer le capteur
   esp_cam_sensor_config_t sensor_config = {};
