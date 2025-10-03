@@ -1,10 +1,9 @@
 import esphome.codegen as cg
 import esphome.config_validation as cv
 from esphome.const import CONF_ID
-from esphome.components import lvgl
 
-DEPENDENCIES = ["lvgl"]
-AUTO_LOAD = []
+DEPENDENCIES = ["lvgl", "tab5_camera"]
+AUTO_LOAD = ["tab5_camera"]
 
 CONF_CAMERA_ID = "camera_id"
 CONF_CANVAS_ID = "canvas_id"
@@ -20,7 +19,7 @@ Tab5Camera = tab5_camera_ns.class_("Tab5Camera")
 CONFIG_SCHEMA = cv.Schema({
     cv.GenerateID(): cv.declare_id(LVGLCameraDisplay),
     cv.Required(CONF_CAMERA_ID): cv.use_id(Tab5Camera),
-    cv.Required(CONF_CANVAS_ID): cv.string,  # ID du canvas LVGL
+    cv.Required(CONF_CANVAS_ID): cv.string,
     cv.Optional(CONF_UPDATE_INTERVAL, default="100ms"): cv.positive_time_period_milliseconds,
 }).extend(cv.COMPONENT_SCHEMA)
 
@@ -36,6 +35,3 @@ async def to_code(config):
     # Définir l'intervalle de mise à jour
     update_interval_ms = config[CONF_UPDATE_INTERVAL].total_milliseconds
     cg.add(var.set_update_interval(int(update_interval_ms)))
-    
-    # Note: Le canvas LVGL sera configuré au runtime
-    # via un lambda dans la configuration LVGL
