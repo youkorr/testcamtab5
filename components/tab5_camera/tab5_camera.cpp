@@ -5,6 +5,9 @@
 #ifdef USE_ESP32_VARIANT_ESP32P4
 #include "tab5_camera_sensor.h"
 
+// Inclure l'implémentation des fonctions sensor
+#include "tab5_camera_sensor_impl.cpp"
+
 // Inline wrapper functions
 namespace {
   esp_cam_sensor_device_t* detect_sensor_inline(
@@ -14,25 +17,31 @@ namespace {
     uint8_t sccb_addr
   ) {
     esp_sccb_io_handle_t sccb_handle;
-    sccb_i2c_config_t sccb_config = {
-      .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-      .device_address = sccb_addr,
-      .scl_speed_hz = 400000
-    };
+    sccb_i2c_config_t sccb_config = {};
+    sccb_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+    sccb_config.device_address = sccb_addr;
+    sccb_config.scl_speed_hz = 400000;
     
     esp_err_t ret = sccb_new_i2c_io(i2c_handle, &sccb_config, &sccb_handle);
     if (ret != ESP_OK) {
       return nullptr;
     }
     
-    esp_cam_sensor_config_t sensor_config = {
-      .sccb_handle = sccb_handle,
-      .reset_pin = reset_pin,
-      .pwdn_pin = pwdn_pin,
-      .xclk_pin = -1,
-      .xclk_freq_hz = 24000000,
-      .sensor_port = ESP_CAM_SENSOR_MIPI_CSI
-    };
+    esp_cam_sensor_config_t sensor_config = {};
+    sensor_config.sccb_handle = sccb_handle;
+    sensor_config.reset_pin = reset_pin;
+    sensor_config.pwdn_pin = pwdn_pin;
+    sensor_config.xclk_pin = -1;
+    sensor_config.xclk_freq_hz = 24000000;
+    sensor_config.sensor_port = ESP_CAM_SENSOR_MIPI_CSI;
+    
+    // Parcourir les fonctions de détection
+    // Note: __esp_cam_sensor_detect_fn_array_start/end sont définis comme weak
+    // donc ils peuvent être NULL si sc202cs n'est pas linké
+    if (&__esp_cam_sensor_detect_fn_array_start == &__esp_cam_sensor_detect_fn_array_end) {
+      // Pas de capteurs enregistrés
+      return nullptr;
+    }
     
     for (esp_cam_sensor_detect_fn_t *p = &__esp_cam_sensor_detect_fn_array_start;
          p < &__esp_cam_sensor_detect_fn_array_end; ++p) {
@@ -403,6 +412,5 @@ void Tab5Camera::dump_config() {
 
 }  // namespace tab5_camera
 }  // namespace esphome
-
 
 
