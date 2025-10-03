@@ -90,14 +90,14 @@ bool Tab5Camera::init_csi_isp_() {
   // Configuration CSI
   esp_cam_ctlr_csi_config_t csi_config = {
     .ctlr_id = 0,
-    .h_res = res.width,
-    .v_res = res.height,
     .lane_bit_rate_mbps = 576,  // SC202CS: 576 Mbps
     .input_data_color_type = CAM_CTLR_COLOR_RAW8,
     .output_data_color_type = CAM_CTLR_COLOR_RAW8,
     .data_lane_num = 1,  // 1 lane MIPI
     .byte_swap_en = false,
     .queue_items = 2,
+    .h_res = res.width,
+    .v_res = res.height,
   };
   
   esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->csi_handle_);
@@ -108,7 +108,7 @@ bool Tab5Camera::init_csi_isp_() {
   
   // Configuration ISP (RAW8 BGGR → RGB565)
   isp_proc_handle_t isp_proc = nullptr;
-  isp_processor_cfg_t isp_config = {
+  esp_isp_processor_cfg_t isp_config = {
     .clk_hz = 120 * 1000 * 1000,
     .input_data_source = ISP_INPUT_DATA_SOURCE_CSI,
     .input_data_color_format = ISP_COLOR_RAW8,
@@ -120,7 +120,7 @@ bool Tab5Camera::init_csi_isp_() {
     .bayer_type = ISP_BAYER_BGGR,
   };
   
-  ret = isp_new_processor(&isp_config, &isp_proc);
+  ret = esp_isp_new_processor(&isp_config, &isp_proc);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "ISP init failed: %s", esp_err_to_name(ret));
     return false;
@@ -132,7 +132,7 @@ bool Tab5Camera::init_csi_isp_() {
   this->configure_sc202cs_();
   
   // Activer le pipeline
-  isp_enable(this->isp_handle_);
+  esp_isp_enable(this->isp_handle_);
   esp_cam_ctlr_enable(this->csi_handle_);
   
   ESP_LOGI(TAG, "Pipeline actif: CSI(RAW8)→ISP→RGB565");
