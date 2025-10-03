@@ -6,6 +6,13 @@
 #include "tab5_camera_sensor.h"
 #include <string.h>
 
+// Définition de la structure SCCB IO
+struct esp_sccb_io_t {
+    i2c_master_dev_handle_t i2c_dev;
+    uint32_t addr_bits_width;
+    uint32_t val_bits_width;
+};
+
 // Implémentation de sccb_new_i2c_io
 esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle, 
                           const sccb_i2c_config_t *config,
@@ -27,12 +34,6 @@ esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle,
     }
     
     // Allouer la structure SCCB IO
-    struct esp_sccb_io_t {
-        i2c_master_dev_handle_t i2c_dev;
-        uint32_t addr_bits_width;
-        uint32_t val_bits_width;
-    };
-    
     esp_sccb_io_t *sccb = (esp_sccb_io_t*)malloc(sizeof(esp_sccb_io_t));
     if (!sccb) {
         i2c_master_bus_rm_device(dev_handle);
