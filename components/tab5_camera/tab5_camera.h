@@ -4,12 +4,30 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/i2c/i2c.h"
 
-// Includes V4L2
+// Includes ESP-IDF pour V4L2
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/mman.h>
-#include "linux/videodev2.h"
-#include "esp_video_init.h"
+#include <unistd.h>
+
+// V4L2 et esp_video pour ESP32-P4
+#ifdef USE_ESP32_VARIANT_ESP32P4
+  #include "linux/videodev2.h"
+  #include "esp_video_init.h"
+  
+  // Définir mmap manuellement si non disponible
+  #ifndef MAP_FAILED
+    #define MAP_FAILED ((void *) -1)
+    #define PROT_READ  0x1
+    #define PROT_WRITE 0x2
+    #define MAP_SHARED 0x01
+  #endif
+  
+  // Déclarer mmap si pas dans les headers standards
+  extern "C" {
+    void* mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset);
+    int munmap(void* addr, size_t length);
+  }
+#endif
 
 namespace esphome {
 namespace tab5_camera {
@@ -85,6 +103,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool streaming_{false};
   CameraFrameBuffer frame_buffer_{};
   
+#ifdef USE_ESP32_VARIANT_ESP32P4
   // V4L2 handles
   int video_fd_{-1};
   uint8_t *mmap_buffers_[2]{nullptr, nullptr};
@@ -94,6 +113,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool init_v4l2_buffers_();
   bool start_v4l2_stream_();
   bool capture_v4l2_frame_();
+#endif
   
   CameraResolutionInfo get_resolution_info_();
   
