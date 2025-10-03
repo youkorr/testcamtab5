@@ -3,19 +3,244 @@
 #include "esphome/core/application.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-// Inclure d'abord les headers nécessaires
-#include "tab5_camera_sensor.h"
 
-// Inclure directement tout le code du driver SC202CS
+// ============================================================================
+// CODE COMPLET DU DRIVER SC202CS INTÉGRÉ
+// ============================================================================
+
 extern "C" {
-  #include "../sensors_sc202cs/sc202cs_types.h"
-  #include "../sensors_sc202cs/sc202cs_regs.h"
-  #include "../sensors_sc202cs/sc202cs_settings.h"
-  #include "../sensors_sc202cs/sc202cs.c"
+
+#include <string.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include "driver/gpio.h"
+#include "esp_err.h"
+#include "esp_log.h"
+
+// Types SC202CS
+typedef struct {
+    uint16_t reg;
+    uint8_t val;
+} sc202cs_reginfo_t;
+
+// Registres SC202CS
+#define SC202CS_REG_END   0xffff
+#define SC202CS_REG_DELAY 0xfffe
+#define SC202CS_REG_SENSOR_ID_H 0x3107
+#define SC202CS_REG_SENSOR_ID_L 0x3108
+#define SC202CS_REG_SLEEP_MODE  0x0100
+#define SC202CS_REG_DIG_COARSE_GAIN 0x3e06
+#define SC202CS_REG_DIG_FINE_GAIN   0x3e07
+#define SC202CS_REG_ANG_GAIN        0x3e09
+#define SC202CS_REG_SHUTTER_TIME_H 0x3e00
+#define SC202CS_REG_SHUTTER_TIME_M 0x3e01
+#define SC202CS_REG_SHUTTER_TIME_L 0x3e02
+
+#define SC202CS_PID         0xeb52
+#define SC202CS_SENSOR_NAME "SC202CS"
+#define SC202CS_SCCB_ADDR 0x36
+
+#ifndef portTICK_RATE_MS
+#define portTICK_RATE_MS portTICK_PERIOD_MS
+#endif
+#define delay_ms(ms) vTaskDelay((ms > portTICK_PERIOD_MS ? ms / portTICK_PERIOD_MS : 1))
+
+// Configuration 640x480 RAW8
+static const sc202cs_reginfo_t init_reglist_640x480[] = {
+    {0x0103, 0x01}, {SC202CS_REG_SLEEP_MODE, 0x00},
+    {0x36e9, 0x80}, {0x36e9, 0x24},
+    {0x301f, 0x01}, {0x3301, 0xff},
+    {0x3304, 0x68}, {0x3306, 0x40},
+    {0x3308, 0x08}, {0x3309, 0xa8},
+    {0x330b, 0xb0}, {0x330c, 0x18},
+    {0x330d, 0xff}, {0x330e, 0x20},
+    {0x331e, 0x59}, {0x331f, 0x99},
+    {0x3333, 0x10}, {0x335e, 0x06},
+    {0x335f, 0x08}, {0x3364, 0x1f},
+    {0x337c, 0x02}, {0x337d, 0x0a},
+    {0x338f, 0xa0}, {0x3390, 0x01},
+    {0x3391, 0x03}, {0x3392, 0x1f},
+    {0x3393, 0xff}, {0x3394, 0xff},
+    {0x3395, 0xff}, {0x33a2, 0x04},
+    {0x33ad, 0x0c}, {0x33b1, 0x20},
+    {0x33b3, 0x38}, {0x33f9, 0x40},
+    {0x33fb, 0x48}, {0x33fc, 0x0f},
+    {0x33fd, 0x1f}, {0x349f, 0x03},
+    {0x34a6, 0x03}, {0x34a7, 0x1f},
+    {0x34a8, 0x38}, {0x34a9, 0x30},
+    {0x34ab, 0xb0}, {0x34ad, 0xb0},
+    {0x34f8, 0x1f}, {0x34f9, 0x20},
+    {0x3630, 0xa0}, {0x3631, 0x92},
+    {0x3632, 0x64}, {0x3633, 0x43},
+    {0x3637, 0x49}, {0x363a, 0x85},
+    {0x363c, 0x0f}, {0x3650, 0x31},
+    {0x3670, 0x0d}, {0x3674, 0xc0},
+    {0x3675, 0xa0}, {0x3676, 0xa0},
+    {0x3677, 0x92}, {0x3678, 0x96},
+    {0x3679, 0x9a}, {0x367c, 0x03},
+    {0x367d, 0x0f}, {0x367e, 0x01},
+    {0x367f, 0x0f}, {0x3698, 0x83},
+    {0x3699, 0x86}, {0x369a, 0x8c},
+    {0x369b, 0x94}, {0x36a2, 0x01},
+    {0x36a3, 0x03}, {0x36a4, 0x07},
+    {0x36ae, 0x0f}, {0x36af, 0x1f},
+    {0x36bd, 0x22}, {0x36be, 0x22},
+    {0x36bf, 0x22}, {0x36d0, 0x01},
+    {0x370f, 0x02}, {0x3721, 0x6c},
+    {0x3722, 0x8d}, {0x3725, 0xc5},
+    {0x3727, 0x14}, {0x3728, 0x04},
+    {0x37b7, 0x04}, {0x37b8, 0x04},
+    {0x37b9, 0x06}, {0x37bd, 0x07},
+    {0x37be, 0x0f}, {0x3901, 0x02},
+    {0x3903, 0x40}, {0x3905, 0x8d},
+    {0x3907, 0x00}, {0x3908, 0x41},
+    {0x391f, 0x41}, {0x3933, 0x80},
+    {0x3934, 0x02}, {0x3937, 0x6f},
+    {0x393a, 0x01}, {0x393d, 0x01},
+    {0x393e, 0xc0}, {0x39dd, 0x41},
+    {0x3e00, 0x00}, {0x3e01, 0x4d},
+    {0x3e02, 0xc0}, {0x3e09, 0x00},
+    {0x4509, 0x28}, {0x450d, 0x61},
+    // Crop pour 640x480
+    {0x3200, 0x01}, {0x3201, 0x40},
+    {0x3202, 0x01}, {0x3203, 0x68},
+    {0x3204, 0x04}, {0x3205, 0xc7},
+    {0x3206, 0x03}, {0x3207, 0x5f},
+    {0x3208, 0x02}, {0x3209, 0x80},
+    {0x320a, 0x01}, {0x320b, 0xe0},
+    {0x3210, 0x00}, {0x3211, 0x04},
+    {0x3212, 0x00}, {0x3213, 0x04},
+    {SC202CS_REG_END, 0x00},
+};
+
+} // extern "C"
+
+// Inclure les implémentations helper
+#include "tab5_camera_sensor.h"
+#include "tab5_camera_sensor_impl.cpp"
+
+extern "C" {
+
+static const char *SC202CS_TAG = "sc202cs";
+
+// Fonctions SCCB de lecture/écriture
+static esp_err_t sc202cs_write(esp_sccb_io_handle_t handle, uint16_t reg, uint8_t data) {
+    return esp_sccb_transmit_reg_a16v8(handle, reg, data);
 }
 
-#include "tab5_camera_sensor_impl.cpp"
-#endif
+static esp_err_t sc202cs_read(esp_sccb_io_handle_t handle, uint16_t reg, uint8_t *data) {
+    return esp_sccb_transmit_receive_reg_a16v8(handle, reg, data);
+}
+
+static esp_err_t sc202cs_write_array(esp_sccb_io_handle_t handle, sc202cs_reginfo_t *regarray) {
+    int i = 0;
+    esp_err_t ret = ESP_OK;
+    while ((ret == ESP_OK) && regarray[i].reg != SC202CS_REG_END) {
+        if (regarray[i].reg != SC202CS_REG_DELAY) {
+            ret = sc202cs_write(handle, regarray[i].reg, regarray[i].val);
+        } else {
+            delay_ms(regarray[i].val);
+        }
+        i++;
+    }
+    return ret;
+}
+
+static esp_err_t sc202cs_get_sensor_id(esp_cam_sensor_device_t *dev, esp_cam_sensor_id_t *id) {
+    uint8_t pid_h, pid_l;
+    esp_err_t ret = sc202cs_read(dev->sccb_handle, SC202CS_REG_SENSOR_ID_H, &pid_h);
+    if (ret != ESP_OK) return ret;
+    
+    ret = sc202cs_read(dev->sccb_handle, SC202CS_REG_SENSOR_ID_L, &pid_l);
+    if (ret != ESP_OK) return ret;
+    
+    id->pid = (pid_h << 8) | pid_l;
+    return ESP_OK;
+}
+
+static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
+    esp_err_t ret = sc202cs_write(dev->sccb_handle, SC202CS_REG_SLEEP_MODE, enable ? 0x01 : 0x00);
+    dev->stream_status = enable;
+    ESP_LOGI(SC202CS_TAG, "Stream=%d", enable);
+    return ret;
+}
+
+static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
+    // Écrire la configuration 640x480
+    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)init_reglist_640x480);
+    if (ret != ESP_OK) {
+        ESP_LOGE(SC202CS_TAG, "Set format failed");
+        return ret;
+    }
+    return ESP_OK;
+}
+
+static esp_err_t sc202cs_priv_ioctl(esp_cam_sensor_device_t *dev, uint32_t cmd, void *arg) {
+    if (cmd == 0x04000004) { // ESP_CAM_SENSOR_IOC_S_STREAM
+        return sc202cs_set_stream(dev, *(int*)arg);
+    }
+    return ESP_OK;
+}
+
+static esp_err_t sc202cs_delete(esp_cam_sensor_device_t *dev) {
+    if (dev) {
+        if (dev->priv) free(dev->priv);
+        free(dev);
+    }
+    return ESP_OK;
+}
+
+static const esp_cam_sensor_ops_t sc202cs_ops = {
+    .set_format = (int (*)(esp_cam_sensor_device_t*, const void*))sc202cs_set_format,
+    .priv_ioctl = (int (*)(esp_cam_sensor_device_t*, uint32_t, void*))sc202cs_priv_ioctl,
+    .del = (int (*)(esp_cam_sensor_device_t*))sc202cs_delete,
+};
+
+esp_cam_sensor_device_t *sc202cs_detect(esp_cam_sensor_config_t *config) {
+    if (!config) return NULL;
+    
+    esp_cam_sensor_device_t *dev = (esp_cam_sensor_device_t*)calloc(1, sizeof(esp_cam_sensor_device_t));
+    if (!dev) {
+        ESP_LOGE(SC202CS_TAG, "No memory");
+        return NULL;
+    }
+    
+    dev->name = (char*)SC202CS_SENSOR_NAME;
+    dev->sccb_handle = config->sccb_handle;
+    dev->xclk_pin = config->xclk_pin;
+    dev->reset_pin = config->reset_pin;
+    dev->pwdn_pin = config->pwdn_pin;
+    dev->sensor_port = config->sensor_port;
+    dev->ops = &sc202cs_ops;
+    
+    // Vérifier l'ID du capteur
+    if (sc202cs_get_sensor_id(dev, &dev->id) != ESP_OK) {
+        ESP_LOGE(SC202CS_TAG, "Get sensor ID failed");
+        free(dev);
+        return NULL;
+    }
+    
+    if (dev->id.pid != SC202CS_PID) {
+        ESP_LOGE(SC202CS_TAG, "Wrong PID: 0x%x", dev->id.pid);
+        free(dev);
+        return NULL;
+    }
+    
+    ESP_LOGI(SC202CS_TAG, "SC202CS detected, PID=0x%x", dev->id.pid);
+    
+    // Configurer le format par défaut
+    sc202cs_set_format(dev, NULL);
+    
+    return dev;
+}
+
+} // extern "C"
+
+#endif  // USE_ESP32_VARIANT_ESP32P4
+
+// ============================================================================
+// CODE TAB5 CAMERA
+// ============================================================================
 
 namespace esphome {
 namespace tab5_camera {
@@ -109,7 +334,7 @@ bool Tab5Camera::init_sensor_() {
   sccb_config.device_address = this->sensor_address_;
   sccb_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
   sccb_config.scl_speed_hz = 400000;
-  sccb_config.addr_bits_width = 16;  // SC202CS utilise des adresses 16-bit
+  sccb_config.addr_bits_width = 16;
   sccb_config.val_bits_width = 8;
   
   esp_sccb_io_handle_t sccb_handle;
@@ -122,7 +347,7 @@ bool Tab5Camera::init_sensor_() {
   // Configurer le capteur
   esp_cam_sensor_config_t sensor_config = {};
   sensor_config.sccb_handle = sccb_handle;
-  sensor_config.reset_pin = -1;  // Reset géré par GPIO externe
+  sensor_config.reset_pin = -1;
   sensor_config.pwdn_pin = -1;
   sensor_config.xclk_pin = (int8_t)this->external_clock_pin_->get_pin();
   sensor_config.xclk_freq_hz = this->external_clock_frequency_;
@@ -137,15 +362,6 @@ bool Tab5Camera::init_sensor_() {
   }
   
   ESP_LOGI(TAG, "✓ SC202CS détecté (PID: 0x%04X)", this->sensor_device_->id.pid);
-  
-  // Configurer le format (VGA RGB565 pour commencer)
-  esp_cam_sensor_format_t format;
-  ret = esp_cam_sensor_get_format(this->sensor_device_, &format);
-  if (ret == ESP_OK) {
-    ESP_LOGI(TAG, "✓ Format capteur: %ux%u @ %u FPS", 
-             format.width, format.height, format.fps);
-  }
-  
   return true;
 }
 
@@ -246,7 +462,7 @@ bool Tab5Camera::init_isp_() {
 
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
-  this->frame_buffer_size_ = res.width * res.height * 2; // RGB565
+  this->frame_buffer_size_ = res.width * res.height * 2;
   
   this->frame_buffers_[0] = (uint8_t*)heap_caps_aligned_alloc(
     64, this->frame_buffer_size_, MALLOC_CAP_SPIRAM
@@ -316,7 +532,7 @@ bool Tab5Camera::start_streaming() {
     int enable = 1;
     esp_err_t ret = esp_cam_sensor_ioctl(
       this->sensor_device_, 
-      ESP_CAM_SENSOR_IOC_S_STREAM, 
+      0x04000004,  // ESP_CAM_SENSOR_IOC_S_STREAM
       &enable
     );
     if (ret != ESP_OK) {
@@ -342,17 +558,11 @@ bool Tab5Camera::stop_streaming() {
     return true;
   }
   
-  // Arrêter CSI
   esp_cam_ctlr_stop(this->csi_handle_);
   
-  // Arrêter le capteur
   if (this->sensor_device_) {
     int enable = 0;
-    esp_cam_sensor_ioctl(
-      this->sensor_device_, 
-      ESP_CAM_SENSOR_IOC_S_STREAM, 
-      &enable
-    );
+    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000004, &enable);
   }
   
   this->streaming_ = false;
