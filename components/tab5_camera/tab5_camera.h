@@ -110,7 +110,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
 #ifdef USE_ESP32_VARIANT_ESP32P4
   static bool on_isp_frame_callback_(isp_proc_handle_t proc, 
-                                     isp_trans_t *trans, 
+                                     esp_isp_processor_event_data_t *trans, 
                                      void *user_data);
 #endif
   
