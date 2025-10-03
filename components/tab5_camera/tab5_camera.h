@@ -5,14 +5,14 @@
 #include "esphome/components/i2c/i2c.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-// Forward declarations pour éviter les includes
+// Forward declarations
 struct esp_cam_sensor_device;
-typedef struct esp_cam_sensor_device esp_cam_sensor_device_t;
 
 extern "C" {
   #include "esp_cam_ctlr.h"
   #include "esp_cam_ctlr_csi.h"
   #include "driver/isp.h"
+  #include "esp_ldo_regulator.h"
 }
 #endif
 
@@ -45,6 +45,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
+  // Configuration
   void set_name(const std::string &name) { this->name_ = name; }
   void set_external_clock_pin(GPIOPin *pin) { this->external_clock_pin_ = pin; }
   void set_external_clock_frequency(uint32_t freq) { this->external_clock_frequency_ = freq; }
@@ -56,11 +57,13 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void set_jpeg_quality(uint8_t quality) { this->jpeg_quality_ = quality; }
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
 
+  // Opérations
   bool capture_frame();
   bool start_streaming();
   bool stop_streaming();
   bool is_streaming() const { return this->streaming_; }
   
+  // Accès données
   uint8_t* get_image_data() { return this->current_frame_buffer_; }
   size_t get_image_size() const { return this->frame_buffer_size_; }
   uint16_t get_image_width() const;
@@ -81,19 +84,31 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
   bool initialized_{false};
   bool streaming_{false};
+  bool frame_ready_{false};
   
+  uint8_t *frame_buffers_[2]{nullptr, nullptr};
   uint8_t *current_frame_buffer_{nullptr};
   size_t frame_buffer_size_{0};
+  uint8_t buffer_index_{0};
   
 #ifdef USE_ESP32_VARIANT_ESP32P4
-  esp_cam_sensor_device_t *sensor_device_{nullptr};
+  struct esp_cam_sensor_device *sensor_device_{nullptr};
   esp_cam_ctlr_handle_t csi_handle_{nullptr};
   isp_proc_handle_t isp_handle_{nullptr};
+  esp_ldo_channel_handle_t ldo_handle_{nullptr};
   
   bool init_sensor_();
+  bool init_ldo_();
   bool init_csi_();
   bool init_isp_();
-  CameraResolutionInfo get_resolution_info_();
+  bool allocate_buffer_();
+  CameraResolutionInfo get_resolution_info_() const;
+  
+  static bool IRAM_ATTR on_csi_new_frame_(
+    esp_cam_ctlr_handle_t handle,
+    esp_cam_ctlr_trans_t *trans,
+    void *user_data
+  );
   
   static bool IRAM_ATTR on_csi_frame_done_(
     esp_cam_ctlr_handle_t handle,
