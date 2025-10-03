@@ -71,7 +71,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   uint16_t get_image_height() const;
 
  protected:
-  GPIOPin *external_clock_pin_{nullptr};
+  uint8_t external_clock_pin_{36};
   uint32_t external_clock_frequency_{24000000};
   GPIOPin *reset_pin_{nullptr};
   GPIOPin *pwdn_pin_{nullptr};
