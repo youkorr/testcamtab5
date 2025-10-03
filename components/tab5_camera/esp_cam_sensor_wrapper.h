@@ -8,7 +8,7 @@ extern "C" {
   //#include "esp_cam_sensor.h"
   //#include "esp_cam_sensor_detect.h"
   //#include "esp_sccb_i2c.h"
-  #include "esp_cam_sensor_types.h"
+  
 }
 #endif
 
