@@ -3,7 +3,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/hal.h"
 #include "esphome/components/i2c/i2c.h"
-#include "components/esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
+#include "testcamtab5/components/esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
 
