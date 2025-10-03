@@ -81,7 +81,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
   CameraResolutionInfo get_resolution_info_();
   void init_test_pattern_();
-  uint16_t read_chip_id_(uint8_t addr);
+  uint16_t read_chip_id_();
   esp_err_t read_register16_(uint16_t reg, uint8_t *value);
   esp_err_t write_register16_(uint16_t reg, uint8_t value);
   
