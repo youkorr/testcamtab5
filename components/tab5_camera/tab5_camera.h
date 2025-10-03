@@ -96,17 +96,21 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
 #ifdef USE_ESP32_VARIANT_ESP32P4
   esp_cam_ctlr_handle_t csi_handle_{nullptr};
+  isp_proc_handle_t isp_handle_{nullptr};
 #endif
   
+  // Méthodes privées
   CameraResolutionInfo get_resolution_info_();
   void init_test_pattern_();
   bool detect_sc202cs_();
-  bool init_csi_();
+  bool init_csi_isp_pipeline_();
   void configure_sc202cs_();
+  esp_err_t read_register16_(uint16_t reg, uint8_t *value);
+  esp_err_t write_register16_(uint16_t reg, uint8_t value);
   
 #ifdef USE_ESP32_VARIANT_ESP32P4
-  static bool on_csi_frame_callback_(esp_cam_ctlr_handle_t handle, 
-                                     esp_cam_ctlr_trans_t *trans, 
+  static bool on_isp_frame_callback_(isp_proc_handle_t proc, 
+                                     isp_trans_t *trans, 
                                      void *user_data);
 #endif
   
