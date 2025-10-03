@@ -8,4 +8,6 @@ idf_component_register(
         esphome
         esp_driver_i2c
         esp_cam_sensor_esphome
+        driver
+        esp_driver_isp
 )
