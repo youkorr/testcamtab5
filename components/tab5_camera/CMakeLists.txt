@@ -5,7 +5,7 @@ idf_component_register(
         "${COMPONENT_PATH}/.."
         "${COMPONENT_PATH}/../esp_cam_sensor_esphome"
         "${COMPONENT_PATH}/../sensors_sc202cs"
-        "${COMPONENT_PATH}/../esp_video_esphome"
+
     REQUIRES 
         esp_driver_i2c
         esp_driver_isp
