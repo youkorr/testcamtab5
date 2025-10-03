@@ -11,8 +11,6 @@ extern "C" {
   #include "driver/isp.h"
   #include "esp_ldo_regulator.h"
 }
-// Le type sera défini dans tab5_camera_sensor.h
-struct esp_cam_sensor_device_t;
 #endif
 
 namespace esphome {
