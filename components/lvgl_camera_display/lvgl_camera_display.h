@@ -18,10 +18,8 @@ class LVGLCameraDisplay : public Component {
   void set_update_interval(uint32_t interval_ms) { this->update_interval_ = interval_ms; }
   
   // Méthode pour configurer le canvas après que LVGL soit prêt
-  void configure_canvas(lv_obj_t *canvas) { 
-    this->canvas_obj_ = canvas;
-    ESP_LOGI("lvgl_camera_display", "Canvas configuré: %p", canvas);
-  }
+  // DECLARATION SEULEMENT - implémentation dans le .cpp
+  void configure_canvas(lv_obj_t *canvas);
   
   float get_setup_priority() const override { return setup_priority::LATE; }
 
