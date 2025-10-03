@@ -3,7 +3,7 @@ idf_component_register(
     INCLUDE_DIRS 
         "."
         "${COMPONENT_PATH}/.."
-        "${COMPONENT_PATH}/../esp_cam_sensor_esphome"
+        "${COMPONENT_PATH}/../esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
         "${COMPONENT_PATH}/../sensors_sc202cs"
 
     REQUIRES 
