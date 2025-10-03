@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS 
         "tab5_camera.cpp"
+        "tab5_camera_sensor_impl.cpp"  # Ajouter comme source séparée
     INCLUDE_DIRS 
         "."
     REQUIRES
