@@ -47,7 +47,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
 
   // Configuration
   void set_name(const std::string &name) { this->name_ = name; }
-  void set_external_clock_pin(GPIOPin *pin) { this->external_clock_pin_ = pin; }
+  void set_external_clock_pin(uint8_t pin) { this->external_clock_pin_ = pin; }
   void set_external_clock_frequency(uint32_t freq) { this->external_clock_frequency_ = freq; }
   void set_reset_pin(GPIOPin *pin) { this->reset_pin_ = pin; }
   void set_pwdn_pin(GPIOPin *pin) { this->pwdn_pin_ = pin; }
@@ -71,13 +71,13 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   uint16_t get_image_height() const;
 
  protected:
-  uint8_t external_clock_pin_{36};
+  uint8_t external_clock_pin_{36};  // Numéro de GPIO pour CAM_MCLK
   uint32_t external_clock_frequency_{24000000};
   GPIOPin *reset_pin_{nullptr};
   GPIOPin *pwdn_pin_{nullptr};
   uint8_t sensor_address_{0x36};
-  uint8_t i2c_scl_pin_{7};
-  uint8_t i2c_sda_pin_{8};
+  uint8_t i2c_scl_pin_{32};  // CAM_SCL
+  uint8_t i2c_sda_pin_{31};  // CAM_SDA
   std::string name_{"Tab5 Camera"};
   
   CameraResolution resolution_{RESOLUTION_VGA};
