@@ -119,7 +119,7 @@ static const sc202cs_reginfo_t init_reglist_640x480[] = {
 // IMPLÉMENTATIONS SCCB ET SENSOR (code de tab5_camera_sensor_impl.cpp intégré)
 // ============================================================================
 
-#include "tab5_camera_sensor.h"
+
 
 extern "C" {
 
