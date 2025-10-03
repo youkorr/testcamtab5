@@ -56,6 +56,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void set_pixel_format(PixelFormat format) { this->pixel_format_ = format; }
   void set_jpeg_quality(uint8_t quality) { this->jpeg_quality_ = quality; }
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
+  void set_i2c_pins(uint8_t scl, uint8_t sda) { this->i2c_scl_pin_ = scl; this->i2c_sda_pin_ = sda; }
 
   // Opérations
   bool capture_frame();
@@ -75,6 +76,8 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   GPIOPin *reset_pin_{nullptr};
   GPIOPin *pwdn_pin_{nullptr};
   uint8_t sensor_address_{0x36};
+  uint8_t i2c_scl_pin_{7};
+  uint8_t i2c_sda_pin_{8};
   std::string name_{"Tab5 Camera"};
   
   CameraResolution resolution_{RESOLUTION_VGA};
@@ -120,5 +123,4 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
 
 }  // namespace tab5_camera
 }  // namespace esphome
-
 
