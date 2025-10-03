@@ -6,7 +6,7 @@
 #ifdef USE_ESP32_VARIANT_ESP32P4
 extern "C" {
   #include "esp_video.h"
-  #include "esp_video_init.h"
+  //#include "esp_video_init.h"
   #include "esp_video_device_internal.h"
   #include "esp_cam_sensor.h"
   #include "esp_cam_ctlr_csi.h"
