@@ -299,8 +299,8 @@ esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle,
         reg_val
     };
     
-    esphome::ErrorCode err = handle->i2c_device->write(data, 3);
-    return (err == esphome::ERROR_OK) ? ESP_OK : ESP_FAIL;
+    esphome::i2c::ErrorCode err = handle->i2c_device->write(data, 3);
+    return (err == esphome::i2c::ERROR_OK) ? ESP_OK : ESP_FAIL;
 }
 
 esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle, 
@@ -316,13 +316,13 @@ esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle,
         (uint8_t)(reg_addr & 0xFF)
     };
     
-    esphome::ErrorCode err = handle->i2c_device->write(addr_buf, 2, false);
-    if (err != esphome::ERROR_OK) {
+    esphome::i2c::ErrorCode err = handle->i2c_device->write(addr_buf, 2, false);
+    if (err != esphome::i2c::ERROR_OK) {
         return ESP_FAIL;
     }
     
     err = handle->i2c_device->read(reg_val, 1);
-    return (err == esphome::ERROR_OK) ? ESP_OK : ESP_FAIL;
+    return (err == esphome::i2c::ERROR_OK) ? ESP_OK : ESP_FAIL;
 }
 
 // Symboles faibles pour éviter les erreurs de linking (en dehors de extern "C")
