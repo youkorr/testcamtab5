@@ -3,12 +3,11 @@
 #include "esphome/core/component.h"
 #include "esphome/core/hal.h"
 #include "esphome/components/i2c/i2c.h"
-#include "esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
-
-
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-
+// Forward declarations pour éviter les includes
+struct esp_cam_sensor_device;
+typedef struct esp_cam_sensor_device esp_cam_sensor_device_t;
 
 extern "C" {
   #include "esp_cam_ctlr.h"
