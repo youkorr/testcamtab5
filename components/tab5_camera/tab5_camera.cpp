@@ -117,7 +117,7 @@ static const sc202cs_reginfo_t init_reglist_640x480[] = {
 
 // Inclure les implémentations helper
 #include "tab5_camera_sensor.h"
-#include "tab5_camera_sensor_impl.cpp"
+
 
 extern "C" {
 
