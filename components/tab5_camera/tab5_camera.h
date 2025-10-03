@@ -11,7 +11,8 @@
 
 // V4L2 et esp_video pour ESP32-P4
 #ifdef USE_ESP32_VARIANT_ESP32P4
-  #include "linux/videodev2.h"
+  // Utiliser notre header V4L2 minimal local
+  #include "v4l2_minimal.h"
   #include "esp_video_init.h"
   
   // Définir mmap manuellement si non disponible
