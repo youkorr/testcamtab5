@@ -7,7 +7,7 @@
 extern "C" {
   #include "esp_video.h"
   //#include "esp_video_init.h"
-  #include "esp_video_device_internal.h"
+  //#include "esp_video_device_internal.h"
   #include "esp_cam_sensor.h"
   #include "esp_cam_ctlr_csi.h"
   #include "driver/isp.h"
