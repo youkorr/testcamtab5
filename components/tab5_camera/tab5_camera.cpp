@@ -122,7 +122,8 @@ void Tab5Camera::setup() {
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Détection SC202CS @ 0x%02X", this->sensor_address_);
   
-  i2c_master_bus_handle_t i2c_handle = this->parent_->get_i2c_bus_handle();
+  // Récupérer le bus I2C depuis le parent I2CDevice
+  i2c_master_bus_handle_t i2c_handle = this->parent_->get_bus();
   if (!i2c_handle) {
     ESP_LOGE(TAG, "I2C handle invalide");
     return false;
