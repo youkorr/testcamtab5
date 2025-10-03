@@ -88,6 +88,21 @@ typedef struct {
     uint16_t sccb_addr;
 } esp_cam_sensor_detect_fn_t;
 
+// Structure pour le format du capteur
+typedef struct {
+    const char *name;
+    uint32_t format;
+    esp_cam_sensor_port_t port;
+    int xclk;
+    uint16_t width;
+    uint16_t height;
+    const void *regs;
+    int regs_size;
+    uint8_t fps;
+    const void *isp_info;
+    void *reserved;
+} esp_cam_sensor_format_t;
+
 // ============================================================================
 // CODE COMPLET DU DRIVER SC202CS INTÉGRÉ
 // ============================================================================
