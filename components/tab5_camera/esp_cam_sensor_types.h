@@ -7,7 +7,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "esp_sccb_intf.h"
+//#include "esp_sccb_intf.h"
 
 #ifdef __cplusplus
 extern "C" {
