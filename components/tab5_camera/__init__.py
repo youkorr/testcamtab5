@@ -10,7 +10,7 @@ from esphome import pins
 
 CODEOWNERS = ["@youkorr"]
 DEPENDENCIES = ["i2c", "esp32"]
-
+AUTO_LOAD = ["esp_cam_sensor_esphome"]
 MULTI_CONF = True
 
 tab5_camera_ns = cg.esphome_ns.namespace("tab5_camera")
