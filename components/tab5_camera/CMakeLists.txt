@@ -2,7 +2,7 @@ idf_component_register(
     SRCS "tab5_camera.cpp"
     INCLUDE_DIRS 
         "."
-        "${COMPONENT_PATH}/../esp_cam_sensor_esphome"
+        "${COMPONENT_PATH}/.."
     REQUIRES 
         esp_driver_i2c
         esp_driver_isp
