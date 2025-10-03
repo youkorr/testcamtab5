@@ -2,7 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/lvgl/lvgl_esphome.h"
-#include "tab5_camera.h"
+#include "../tab5_camera/tab5_camera.h"
 
 namespace esphome {
 namespace lvgl_camera_display {
