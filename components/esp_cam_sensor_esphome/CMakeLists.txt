@@ -1,6 +1,7 @@
+# components/esp_cam_sensor_esphome/CMakeLists.txt
 idf_component_register(
     SRCS 
-        "esp_cam_sensor.cpp"
+        "esp_cam_sensor_wrapper.cpp"
         "${COMPONENT_PATH}/../sensors_sc202cs/sc202cs.c"
     INCLUDE_DIRS 
         "."
@@ -11,5 +12,4 @@ idf_component_register(
         esphome
 )
 
-# Définir le symbole pour forcer le linkage du driver SC202CS
 target_link_libraries(${COMPONENT_LIB} INTERFACE "-u sc202cs_detect")
