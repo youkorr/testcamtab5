@@ -5,15 +5,14 @@
 #include "esphome/components/i2c/i2c.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-// Forward declaration pour le type sensor
-typedef struct esp_cam_sensor_device_t esp_cam_sensor_device_t;
-
 extern "C" {
   #include "esp_cam_ctlr.h"
   #include "esp_cam_ctlr_csi.h"
   #include "driver/isp.h"
   #include "esp_ldo_regulator.h"
 }
+// Le type sera défini dans tab5_camera_sensor.h
+struct esp_cam_sensor_device_t;
 #endif
 
 namespace esphome {
@@ -120,6 +119,5 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
 
 }  // namespace tab5_camera
 }  // namespace esphome
-
 
 
