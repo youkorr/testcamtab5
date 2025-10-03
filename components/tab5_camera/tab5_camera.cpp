@@ -1,10 +1,10 @@
 #include "tab5_camera.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
-//#include "esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
 
+// ✅ IMPORTANT : Include ici dans le .cpp, pas dans le .h
 #ifdef USE_ESP32_VARIANT_ESP32P4
-
+#include "esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
 using esphome::esp_cam_sensor_esphome::ESPCamSensorWrapper;
 #endif
 
@@ -73,7 +73,7 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
-  // Détection du capteur
+  // Détection du capteur via le wrapper
   int8_t reset = this->reset_pin_ ? this->reset_pin_->get_pin() : -1;
   int8_t pwdn = this->pwdn_pin_ ? this->pwdn_pin_->get_pin() : -1;
   
