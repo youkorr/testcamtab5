@@ -3,7 +3,7 @@
 #include "esphome/core/application.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-#include "esp_cam_sensor_wrapper.h"
+#include "esphome/components/esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
 using esphome::esp_cam_sensor_esphome::ESPCamSensorWrapper;
 #endif
 
@@ -260,7 +260,7 @@ bool IRAM_ATTR Tab5Camera::on_csi_frame_done_(
   return false;
 }
 
-CameraResolutionInfo Tab5Camera::get_resolution_info_() {
+CameraResolutionInfo Tab5Camera::get_resolution_info_() const {
   switch (this->resolution_) {
     case RESOLUTION_720P: return {1280, 720};
     case RESOLUTION_1080P: return {1920, 1080};
