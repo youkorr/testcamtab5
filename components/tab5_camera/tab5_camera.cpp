@@ -3,8 +3,9 @@
 #include "esphome/core/application.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-#include "esphome/components/esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
-using esphome::esp_cam_sensor_esphome::ESPCamSensorWrapper;
+extern "C" {
+  #include "esp_cam_sensor_wrapper.h"
+}
 #endif
 
 namespace esphome {
