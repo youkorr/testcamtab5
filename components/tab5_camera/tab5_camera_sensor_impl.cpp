@@ -98,6 +98,45 @@ extern "C" esp_err_t esp_cam_sensor_ioctl(esp_cam_sensor_device_t *dev,
     return esp_cam_sensor_ioctl_impl(dev, cmd, arg);
 }
 
+// ============================================================================
+// Implémentations des fonctions SCCB pour communication I2C
+// ============================================================================
+
+extern "C" esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle, 
+                                                   uint16_t reg_addr, 
+                                                   uint8_t reg_val) {
+    if (!handle || !handle->i2c_dev) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // Format: [REG_ADDR_H, REG_ADDR_L, VALUE]
+    uint8_t write_buf[3];
+    write_buf[0] = (reg_addr >> 8) & 0xFF;  // Adresse haute
+    write_buf[1] = reg_addr & 0xFF;         // Adresse basse
+    write_buf[2] = reg_val;                  // Valeur
+    
+    return i2c_master_transmit(handle->i2c_dev, write_buf, 3, -1);
+}
+
+extern "C" esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle, 
+                                                          uint16_t reg_addr, 
+                                                          uint8_t *reg_val) {
+    if (!handle || !handle->i2c_dev || !reg_val) {
+        return ESP_ERR_INVALID_ARG;
+    }
+    
+    // Format pour écrire l'adresse: [REG_ADDR_H, REG_ADDR_L]
+    uint8_t reg_addr_buf[2];
+    reg_addr_buf[0] = (reg_addr >> 8) & 0xFF;
+    reg_addr_buf[1] = reg_addr & 0xFF;
+    
+    // Écrire l'adresse puis lire la valeur
+    return i2c_master_transmit_receive(handle->i2c_dev, 
+                                       reg_addr_buf, 2, 
+                                       reg_val, 1, 
+                                       -1);
+}
+
 // Déclaration des symboles externes - ils seront définis par le linker
 // Ces symboles sont créés par la macro ESP_CAM_SENSOR_DETECT_FN dans sc202cs.c
 extern "C" {
