@@ -208,21 +208,21 @@ void Tab5Camera::configure_sc202cs_() {
 }
 
 bool Tab5Camera::on_isp_frame_callback_(isp_proc_handle_t proc, 
-                                        isp_trans_t *trans, 
+                                        esp_isp_processor_event_data_t *trans, 
                                         void *user_data) {
   Tab5Camera *camera = (Tab5Camera*)user_data;
   
-  if (trans && trans->buffer && trans->buflen > 0) {
+  if (trans && trans->frame_buffer && trans->frame_buffer_size > 0) {
     // Copier la frame RGB565 depuis l'ISP
-    size_t copy_len = std::min((size_t)trans->buflen, camera->frame_buffer_.length);
-    memcpy(camera->frame_buffer_.buffer, trans->buffer, copy_len);
+    size_t copy_len = std::min((size_t)trans->frame_buffer_size, camera->frame_buffer_.length);
+    memcpy(camera->frame_buffer_.buffer, trans->frame_buffer, copy_len);
     
     camera->frame_received_ = true;
     
     static uint32_t isp_frames = 0;
     isp_frames++;
     if (isp_frames % 60 == 0) {
-      ESP_LOGI(TAG, "📸 ISP RGB565 frame #%u (%u bytes)", isp_frames, trans->buflen);
+      ESP_LOGI(TAG, "📸 ISP RGB565 frame #%u (%u bytes)", isp_frames, trans->frame_buffer_size);
     }
   }
   
@@ -357,6 +357,7 @@ void Tab5Camera::dump_config() {
 
 }  // namespace tab5_camera
 }  // namespace esphome
+
 
 
 
