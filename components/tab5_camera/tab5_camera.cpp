@@ -4,7 +4,7 @@
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
 #include "tab5_camera_sensor.h"
-#include "tab5_camera_sensor_impl.cpp"
+//#include "tab5_camera_sensor_impl.cpp"
 #endif
 
 namespace esphome {
