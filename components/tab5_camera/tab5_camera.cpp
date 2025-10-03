@@ -4,7 +4,15 @@
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
 #include "tab5_camera_sensor.h"
-//#include "tab5_camera_sensor_impl.cpp"
+
+// Inclure le driver SC202CS  
+extern "C" {
+  #include "../../sensors_sc202cs/sc202cs.h"
+  #include "esp_sccb_intf.h"
+  #include "esp_sccb_i2c.h"
+}
+
+#include "tab5_camera_sensor_impl.cpp"
 #endif
 
 namespace esphome {
@@ -30,7 +38,7 @@ void Tab5Camera::setup() {
     this->pwdn_pin_->digital_write(false);
   }
   
-  // 2. Skip détection capteur pour éviter conflit I2C
+  // 2. Init capteur SC202CS
   if (!this->init_sensor_()) {
     ESP_LOGE(TAG, "❌ Échec init capteur");
     this->mark_failed();
@@ -78,11 +86,63 @@ void Tab5Camera::setup() {
 
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Init capteur SC202CS");
-  ESP_LOGW(TAG, "⚠️ Détection I2C désactivée - utilisation directe du driver");
   
-  // Skip complètement la détection I2C pour éviter le conflit avec le bus ESPHome
-  // Le capteur sera configuré manuellement via CSI/ISP
-  this->sensor_device_ = nullptr;
+  // Créer un bus I2C maître pour le capteur
+  i2c_master_bus_config_t bus_config = {};
+  bus_config.i2c_port = I2C_NUM_0;
+  bus_config.sda_io_num = (gpio_num_t)this->i2c_sda_pin_;
+  bus_config.scl_io_num = (gpio_num_t)this->i2c_scl_pin_;
+  bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
+  bus_config.flags.enable_internal_pullup = true;
+  
+  i2c_master_bus_handle_t bus_handle;
+  esp_err_t ret = i2c_new_master_bus(&bus_config, &bus_handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "I2C bus init failed: %d", ret);
+    return false;
+  }
+  
+  // Configurer SCCB pour SC202CS
+  sccb_i2c_config_t sccb_config = {};
+  sccb_config.device_address = this->sensor_address_;
+  sccb_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+  sccb_config.scl_speed_hz = 400000;
+  sccb_config.addr_bits_width = 16;  // SC202CS utilise des adresses 16-bit
+  sccb_config.val_bits_width = 8;
+  
+  esp_sccb_io_handle_t sccb_handle;
+  ret = sccb_new_i2c_io(bus_handle, &sccb_config, &sccb_handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "SCCB init failed: %d", ret);
+    return false;
+  }
+  
+  // Configurer le capteur
+  esp_cam_sensor_config_t sensor_config = {};
+  sensor_config.sccb_handle = sccb_handle;
+  sensor_config.reset_pin = -1;  // Reset géré par GPIO externe
+  sensor_config.pwdn_pin = -1;
+  sensor_config.xclk_pin = (int8_t)this->external_clock_pin_->get_pin();
+  sensor_config.xclk_freq_hz = this->external_clock_frequency_;
+  sensor_config.sensor_port = ESP_CAM_SENSOR_MIPI_CSI;
+  
+  // Détecter et initialiser le capteur
+  this->sensor_device_ = sc202cs_detect(&sensor_config);
+  
+  if (this->sensor_device_ == nullptr) {
+    ESP_LOGE(TAG, "SC202CS detection failed");
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "✓ SC202CS détecté (PID: 0x%04X)", this->sensor_device_->id.pid);
+  
+  // Configurer le format (VGA RGB565 pour commencer)
+  esp_cam_sensor_format_t format;
+  ret = esp_cam_sensor_get_format(this->sensor_device_, &format);
+  if (ret == ESP_OK) {
+    ESP_LOGI(TAG, "✓ Format capteur: %ux%u @ %u FPS", 
+             format.width, format.height, format.fps);
+  }
   
   return true;
 }
@@ -249,6 +309,21 @@ bool Tab5Camera::start_streaming() {
   
   ESP_LOGI(TAG, "Démarrage streaming");
   
+  // Démarrer le capteur
+  if (this->sensor_device_) {
+    int enable = 1;
+    esp_err_t ret = esp_cam_sensor_ioctl(
+      this->sensor_device_, 
+      ESP_CAM_SENSOR_IOC_S_STREAM, 
+      &enable
+    );
+    if (ret != ESP_OK) {
+      ESP_LOGE(TAG, "Failed to start sensor: %d", ret);
+      return false;
+    }
+  }
+  
+  // Démarrer CSI
   esp_err_t ret = esp_cam_ctlr_start(this->csi_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Start CSI failed: %d", ret);
@@ -265,7 +340,19 @@ bool Tab5Camera::stop_streaming() {
     return true;
   }
   
+  // Arrêter CSI
   esp_cam_ctlr_stop(this->csi_handle_);
+  
+  // Arrêter le capteur
+  if (this->sensor_device_) {
+    int enable = 0;
+    esp_cam_sensor_ioctl(
+      this->sensor_device_, 
+      ESP_CAM_SENSOR_IOC_S_STREAM, 
+      &enable
+    );
+  }
+  
   this->streaming_ = false;
   ESP_LOGI(TAG, "⏹ Streaming arrêté");
   return true;
