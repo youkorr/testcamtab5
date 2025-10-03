@@ -122,13 +122,13 @@ void Tab5Camera::setup() {
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Détection SC202CS @ 0x%02X", this->sensor_address_);
   
-  // L'accès au bus I2C ESP-IDF n'est pas directement exposé par ESPHome
-  // On va créer notre propre bus I2C temporairement
+  // Créer un bus I2C pour communiquer avec le capteur
+  // ESPHome I2CDevice n'expose pas directement le handle ESP-IDF
   i2c_master_bus_config_t i2c_bus_config = {};
   i2c_bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
   i2c_bus_config.i2c_port = I2C_NUM_0;
-  i2c_bus_config.scl_io_num = static_cast<gpio_num_t>(this->parent_->get_scl_pin());
-  i2c_bus_config.sda_io_num = static_cast<gpio_num_t>(this->parent_->get_sda_pin());
+  i2c_bus_config.scl_io_num = GPIO_NUM_7;  // GPIO par défaut pour SCL sur ESP32-P4
+  i2c_bus_config.sda_io_num = GPIO_NUM_8;  // GPIO par défaut pour SDA sur ESP32-P4
   i2c_bus_config.glitch_ignore_cnt = 7;
   i2c_bus_config.flags.enable_internal_pullup = true;
   
@@ -139,9 +139,16 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
-  // GPIOPin n'a pas get_pin(), on utilise directement le numéro de pin interne
-  int8_t reset = this->reset_pin_ ? static_cast<int8_t>(this->reset_pin_->get_pin()) : -1;
-  int8_t pwdn = this->pwdn_pin_ ? static_cast<int8_t>(this->pwdn_pin_->get_pin()) : -1;
+  // Récupérer les numéros de pins GPIO - accès direct au membre interne
+  int8_t reset = -1;
+  int8_t pwdn = -1;
+  
+  if (this->reset_pin_) {
+    reset = static_cast<int8_t>(this->reset_pin_->get_pin());
+  }
+  if (this->pwdn_pin_) {
+    pwdn = static_cast<int8_t>(this->pwdn_pin_->get_pin());
+  }
   
   this->sensor_device_ = detect_sensor_inline(
     i2c_handle, reset, pwdn, this->sensor_address_
