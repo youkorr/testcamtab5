@@ -702,9 +702,18 @@ bool IRAM_ATTR Tab5Camera::on_csi_frame_done_(
   Tab5Camera *cam = (Tab5Camera*)user_data;
   
   if (trans->received_size > 0) {
+    // Alterner entre les deux buffers
     cam->buffer_index_ = (cam->buffer_index_ + 1) % 2;
     cam->current_frame_buffer_ = cam->frame_buffers_[cam->buffer_index_];
     cam->frame_ready_ = true;
+    
+    // CRITIQUE: Relancer immédiatement la réception de la prochaine frame
+    // Sans cela, on ne reçoit qu'UNE SEULE frame
+    esp_cam_ctlr_trans_t next_trans = {};
+    next_trans.buffer = cam->frame_buffers_[cam->buffer_index_];
+    next_trans.buflen = cam->frame_buffer_size_;
+    
+    esp_cam_ctlr_receive(handle, &next_trans, 0);
   }
   
   return false;
@@ -749,7 +758,22 @@ bool Tab5Camera::start_streaming() {
   }
   
   this->streaming_ = true;
-  ESP_LOGI(TAG, "✅ Streaming actif");
+  
+  // CRITIQUE : Démarrer la réception de frames
+  // Sans cela, les callbacks ne se déclenchent JAMAIS
+  esp_cam_ctlr_trans_t trans = {};
+  trans.buffer = this->frame_buffers_[0];
+  trans.buflen = this->frame_buffer_size_;
+  
+  ret = esp_cam_ctlr_receive(this->csi_handle_, &trans, 0);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to start frame reception: %d", ret);
+    this->streaming_ = false;
+    esp_cam_ctlr_stop(this->csi_handle_);
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "✅ Streaming actif + réception démarrée");
   return true;
 }
 
@@ -775,7 +799,7 @@ bool Tab5Camera::capture_frame() {
     return false;
   }
   
-  this->frame_ready_ = true;
+  this->frame_ready_ = false;
   return true;
 }
 
