@@ -10,7 +10,7 @@
 #include <stdbool.h>
 #include "sdkconfig.h"
 #include "driver/isp.h"
-#include <linux/v4l2-controls.h>
+//#include <linux/v4l2-controls.h>
 
 #ifdef __cplusplus
 extern "C" {
