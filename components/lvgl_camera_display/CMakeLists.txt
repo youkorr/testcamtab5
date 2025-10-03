@@ -3,7 +3,6 @@ idf_component_register(
         "lvgl_camera_display.cpp"
     INCLUDE_DIRS 
         "."
-        "${COMPONENT_PATH}/../tab5_camera"
     REQUIRES
         esphome
         lvgl
