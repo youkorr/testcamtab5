@@ -56,7 +56,8 @@ typedef struct {
 
 struct _esp_cam_sensor_ops;
 
-typedef struct {
+// Structure complète (pas typedef pour éviter les conflits)
+struct esp_cam_sensor_device_t {
     char *name;
     esp_sccb_io_handle_t sccb_handle;
     int8_t xclk_pin;
@@ -68,7 +69,7 @@ typedef struct {
     uint8_t stream_status;
     const struct _esp_cam_sensor_ops *ops;
     void *priv;
-} esp_cam_sensor_device_t;
+};
 
 typedef struct {
     union {
