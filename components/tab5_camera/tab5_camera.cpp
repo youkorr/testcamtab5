@@ -139,16 +139,10 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
-  // Récupérer les numéros de pins GPIO - accès direct au membre interne
+  // Les pins reset/pwdn sont gérées en dehors du sensor driver
+  // On passe -1 pour indiquer qu'elles ne sont pas utilisées par le driver
   int8_t reset = -1;
   int8_t pwdn = -1;
-  
-  if (this->reset_pin_) {
-    reset = static_cast<int8_t>(this->reset_pin_->get_pin());
-  }
-  if (this->pwdn_pin_) {
-    pwdn = static_cast<int8_t>(this->pwdn_pin_->get_pin());
-  }
   
   this->sensor_device_ = detect_sensor_inline(
     i2c_handle, reset, pwdn, this->sensor_address_
