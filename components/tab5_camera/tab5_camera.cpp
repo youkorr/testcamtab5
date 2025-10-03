@@ -1,9 +1,10 @@
 #include "tab5_camera.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
+#include "../esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-#include "esp_cam_sensor_wrapper.h"
+
 using esphome::esp_cam_sensor_esphome::ESPCamSensorWrapper;
 #endif
 
