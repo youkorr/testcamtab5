@@ -81,9 +81,6 @@ async def to_code(config):
     await cg.register_component(var, config)
     await i2c.register_i2c_device(var, config)
     
-    # Charger les composants de capteur
-    cg.add_library("ESP-CAM-Sensor", None, None)
-    
     cg.add(var.set_name(config[CONF_NAME]))
     
     # Gérer le pin externe de l'horloge (peut être un int ou un GPIO)
