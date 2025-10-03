@@ -775,7 +775,7 @@ bool Tab5Camera::capture_frame() {
     return false;
   }
   
-  this->frame_ready_ = false;
+  this->frame_ready_ = true;
   return true;
 }
 
