@@ -1,11 +1,13 @@
+#include "esp_cam_sensor_wrapper.h"
+
+#ifdef USE_ESP32_VARIANT_ESP32P4
+
 #include "esp_cam_sensor.h"
 
 namespace esphome {
 namespace esp_cam_sensor_esphome {
 
 static const char *const TAG = "esp_cam_sensor";
-
-#ifdef USE_ESP32_VARIANT_ESP32P4
 
 esp_cam_sensor_device_t* ESPCamSensorWrapper::detect_sensor(
   i2c_master_bus_handle_t i2c_handle,
@@ -77,7 +79,7 @@ esp_err_t ESPCamSensorWrapper::stop_stream(esp_cam_sensor_device_t* dev) {
   return esp_cam_sensor_ioctl(dev, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
 }
 
-#endif
-
 }  // namespace esp_cam_sensor_esphome
 }  // namespace esphome
+
+#endif  // USE_ESP32_VARIANT_ESP32P4
