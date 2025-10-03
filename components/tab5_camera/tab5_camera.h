@@ -4,6 +4,20 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/i2c/i2c.h"
 
+// Forward declarations pour éviter les includes C dans le header
+#ifdef USE_ESP32_VARIANT_ESP32P4
+extern "C" {
+  struct esp_cam_sensor_device_t;
+  typedef struct esp_cam_sensor_device_t esp_cam_sensor_device_t;
+  
+  struct esp_cam_ctlr_t;
+  typedef struct esp_cam_ctlr_t* esp_cam_ctlr_handle_t;
+  
+  struct isp_processor_t;
+  typedef struct isp_processor_t* isp_proc_handle_t;
+}
+#endif
+
 namespace esphome {
 namespace tab5_camera {
 
@@ -79,13 +93,18 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool sensor_detected_{false};
   CameraFrameBuffer frame_buffer_{};
   
+#ifdef USE_ESP32_VARIANT_ESP32P4
+  esp_cam_sensor_device_t *sensor_device_{nullptr};
+  esp_cam_ctlr_handle_t csi_handle_{nullptr};
+  isp_proc_handle_t isp_handle_{nullptr};
+  
+  bool init_espressif_sensor_();
+  bool init_csi_isp_();
+#endif
+  
   CameraResolutionInfo get_resolution_info_();
   void init_test_pattern_();
-  uint16_t read_chip_id_();
-  esp_err_t read_register16_(uint16_t reg, uint8_t *value);
-  esp_err_t write_register16_(uint16_t reg, uint8_t value);
   
-  static constexpr uint16_t SC202CS_CHIP_ID_REG = 0x3107;
   static constexpr uint16_t SC2356_CHIP_ID_VALUE = 0xEB52;
 };
 
