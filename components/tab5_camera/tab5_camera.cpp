@@ -349,7 +349,7 @@ bool Tab5Camera::init_sensor_() {
   sensor_config.sccb_handle = sccb_handle;
   sensor_config.reset_pin = -1;
   sensor_config.pwdn_pin = -1;
-  sensor_config.xclk_pin = 36;  // GPIO36 pour CAM_MCLK sur Tab5
+  sensor_config.xclk_pin = (int8_t)this->external_clock_pin_;
   sensor_config.xclk_freq_hz = this->external_clock_frequency_;
   sensor_config.sensor_port = ESP_CAM_SENSOR_MIPI_CSI;
   
