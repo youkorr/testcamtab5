@@ -349,13 +349,9 @@ bool Tab5Camera::init_sensor_() {
   sensor_config.sccb_handle = sccb_handle;
   sensor_config.reset_pin = -1;
   sensor_config.pwdn_pin = -1;
-    
-  auto *pin = static_cast<esphome::InternalGPIOPin *>(this->external_clock_pin_);
-  sensor_config.xclk_pin = pin != nullptr ? pin->pin : -1;
-    
+  sensor_config.xclk_pin = (int8_t)this->external_clock_pin_->get_pin();
   sensor_config.xclk_freq_hz = this->external_clock_frequency_;
   sensor_config.sensor_port = ESP_CAM_SENSOR_MIPI_CSI;
-
   
   // Détecter et initialiser le capteur
   this->sensor_device_ = sc202cs_detect(&sensor_config);
@@ -609,5 +605,4 @@ void Tab5Camera::dump_config() {
 
 }  // namespace tab5_camera
 }  // namespace esphome
-
 
