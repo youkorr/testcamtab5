@@ -2,10 +2,14 @@
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
 
-// ✅ IMPORTANT : Include ici dans le .cpp, pas dans le .h
 #ifdef USE_ESP32_VARIANT_ESP32P4
+// Tous les includes nécessaires
 #include "esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
+#include "esp_video_esphome/esp_video_wrapper.h"
+// sc202cs.h est déjà inclus via esp_cam_sensor_wrapper.h
+
 using esphome::esp_cam_sensor_esphome::ESPCamSensorWrapper;
+using esphome::esp_video_esphome::ESPVideoWrapper;
 #endif
 
 namespace esphome {
