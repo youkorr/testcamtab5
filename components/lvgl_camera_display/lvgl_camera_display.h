@@ -2,7 +2,7 @@
 
 #include "esphome/core/component.h"
 #include "esphome/components/lvgl/lvgl_esphome.h"
-#include "../tab5_camera/tab5_camera.h"
+#include "tab5_camera.h"
 
 namespace esphome {
 namespace lvgl_camera_display {
@@ -17,8 +17,6 @@ class LVGLCameraDisplay : public Component {
   void set_canvas_id(const std::string &canvas_id) { this->canvas_id_ = canvas_id; }
   void set_update_interval(uint32_t interval_ms) { this->update_interval_ = interval_ms; }
   
-  // Méthode pour configurer le canvas après que LVGL soit prêt
-  // DECLARATION SEULEMENT - implémentation dans le .cpp
   void configure_canvas(lv_obj_t *canvas);
   
   float get_setup_priority() const override { return setup_priority::LATE; }
