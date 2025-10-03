@@ -4,20 +4,6 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/i2c/i2c.h"
 
-// APIs CSI + ISP pour ESP32-P4 (ESP-IDF 5.4+)
-#ifdef USE_ESP32_VARIANT_ESP32P4
-  #include "driver/isp.h"
-  #include "esp_cam_ctlr.h"
-  #include "esp_cam_ctlr_csi.h"
-  
-  // Types de couleur
-  #define CAM_CTLR_COLOR_RAW8    ESP_CAM_CTLR_COLOR_RAW8
-  #define CAM_CTLR_COLOR_RGB565  ESP_CAM_CTLR_COLOR_RGB565
-  #define ISP_COLOR_RAW8         ISP_COLOR_RAW8
-  #define ISP_COLOR_RGB565       ISP_COLOR_RGB565
-  #define ISP_BAYER_BGGR         ISP_BAYER_BGGR
-#endif
-
 namespace esphome {
 namespace tab5_camera {
 
@@ -91,28 +77,13 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool initialized_{false};
   bool streaming_{false};
   bool sensor_detected_{false};
-  bool frame_received_{false};
   CameraFrameBuffer frame_buffer_{};
   
-#ifdef USE_ESP32_VARIANT_ESP32P4
-  esp_cam_ctlr_handle_t csi_handle_{nullptr};
-  isp_proc_handle_t isp_handle_{nullptr};
-#endif
-  
-  // Méthodes privées
   CameraResolutionInfo get_resolution_info_();
   void init_test_pattern_();
-  bool detect_sc202cs_();
-  bool init_csi_isp_pipeline_();
-  void configure_sc202cs_();
+  uint16_t read_chip_id_(uint8_t addr);
   esp_err_t read_register16_(uint16_t reg, uint8_t *value);
   esp_err_t write_register16_(uint16_t reg, uint8_t value);
-  
-#ifdef USE_ESP32_VARIANT_ESP32P4
-  static bool on_isp_frame_callback_(isp_proc_handle_t proc, 
-                                     esp_isp_processor_event_data_t *trans, 
-                                     void *user_data);
-#endif
   
   static constexpr uint16_t SC202CS_CHIP_ID_REG = 0x3107;
   static constexpr uint16_t SC2356_CHIP_ID_VALUE = 0xEB52;
