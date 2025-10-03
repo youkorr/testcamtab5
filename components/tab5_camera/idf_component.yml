@@ -1,0 +1,10 @@
+version: "1.0.0"
+description: "Tab5 Camera with esp_video support"
+
+dependencies:
+  idf: ">=5.3"
+  
+  espressif/esp_video:
+    version: "*"
+    git: https://github.com/espressif/esp-video-components.git
+    path: esp_video
