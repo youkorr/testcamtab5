@@ -78,6 +78,9 @@ async def to_code(config):
     await cg.register_component(var, config)
     await i2c.register_i2c_device(var, config)
     
+    # Charger les composants de capteur
+    cg.add_library("ESP-CAM-Sensor", None, None)
+    
     cg.add(var.set_name(config[CONF_NAME]))
     
     ext_clock_pin = await cg.gpio_pin_expression(config[CONF_EXTERNAL_CLOCK_PIN])
