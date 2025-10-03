@@ -4,6 +4,20 @@
 #include "esphome/core/hal.h"
 #include "esphome/components/i2c/i2c.h"
 
+// APIs CSI + ISP pour ESP32-P4 (ESP-IDF 5.4+)
+#ifdef USE_ESP32_VARIANT_ESP32P4
+  #include "driver/isp.h"
+  #include "esp_cam_ctlr.h"
+  #include "esp_cam_ctlr_csi.h"
+  
+  // Types de couleur
+  #define CAM_CTLR_COLOR_RAW8    ESP_CAM_CTLR_COLOR_RAW8
+  #define CAM_CTLR_COLOR_RGB565  ESP_CAM_CTLR_COLOR_RGB565
+  #define ISP_COLOR_RAW8         ISP_COLOR_RAW8
+  #define ISP_COLOR_RGB565       ISP_COLOR_RGB565
+  #define ISP_BAYER_BGGR         ISP_BAYER_BGGR
+#endif
+
 namespace esphome {
 namespace tab5_camera {
 
@@ -51,14 +65,12 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void set_jpeg_quality(uint8_t quality) { this->jpeg_quality_ = quality; }
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
 
-  // Méthodes de capture
   bool capture_frame();
   bool take_snapshot();
   bool start_streaming();
   bool stop_streaming();
   bool is_streaming() const { return this->streaming_; }
   
-  // Accès aux données d'image
   uint8_t* get_image_data() { return this->frame_buffer_.buffer; }
   size_t get_image_size() const { return this->frame_buffer_.length; }
   uint16_t get_image_width() const { return this->frame_buffer_.width; }
@@ -78,9 +90,25 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
   bool initialized_{false};
   bool streaming_{false};
+  bool sensor_detected_{false};
+  bool frame_received_{false};
   CameraFrameBuffer frame_buffer_{};
   
+#ifdef USE_ESP32_VARIANT_ESP32P4
+  esp_cam_ctlr_handle_t csi_handle_{nullptr};
+#endif
+  
   CameraResolutionInfo get_resolution_info_();
+  void init_test_pattern_();
+  bool detect_sc202cs_();
+  bool init_csi_();
+  void configure_sc202cs_();
+  
+#ifdef USE_ESP32_VARIANT_ESP32P4
+  static bool on_csi_frame_callback_(esp_cam_ctlr_handle_t handle, 
+                                     esp_cam_ctlr_trans_t *trans, 
+                                     void *user_data);
+#endif
   
   static constexpr uint16_t SC202CS_CHIP_ID_REG = 0x3107;
   static constexpr uint16_t SC2356_CHIP_ID_VALUE = 0xEB52;
