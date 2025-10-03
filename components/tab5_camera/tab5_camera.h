@@ -5,7 +5,7 @@
 #include "esphome/components/i2c/i2c.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-#include "../esp_cam_sensor_esphome/esp_cam_sensor.h"
+#include "esp_cam_sensor_wrapper.h"
 
 extern "C" {
   #include "esp_cam_ctlr.h"
@@ -21,11 +21,14 @@ enum CameraResolution {
   RESOLUTION_VGA = 0,
   RESOLUTION_720P = 1,
   RESOLUTION_1080P = 2,
+  RESOLUTION_QVGA = 3,
 };
 
 enum PixelFormat {
   PIXEL_FORMAT_RGB565 = 0,
-  PIXEL_FORMAT_RAW8 = 1,
+  PIXEL_FORMAT_YUV422 = 1,
+  PIXEL_FORMAT_RAW8 = 2,
+  PIXEL_FORMAT_JPEG = 3,
 };
 
 struct CameraResolutionInfo {
@@ -41,11 +44,14 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   float get_setup_priority() const override { return setup_priority::DATA; }
 
   void set_name(const std::string &name) { this->name_ = name; }
+  void set_external_clock_pin(GPIOPin *pin) { this->external_clock_pin_ = pin; }
+  void set_external_clock_frequency(uint32_t freq) { this->external_clock_frequency_ = freq; }
   void set_reset_pin(GPIOPin *pin) { this->reset_pin_ = pin; }
   void set_pwdn_pin(GPIOPin *pin) { this->pwdn_pin_ = pin; }
   void set_sensor_address(uint8_t address) { this->sensor_address_ = address; }
   void set_resolution(CameraResolution resolution) { this->resolution_ = resolution; }
   void set_pixel_format(PixelFormat format) { this->pixel_format_ = format; }
+  void set_jpeg_quality(uint8_t quality) { this->jpeg_quality_ = quality; }
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
 
   bool capture_frame();
@@ -59,6 +65,8 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   uint16_t get_image_height() const;
 
  protected:
+  GPIOPin *external_clock_pin_{nullptr};
+  uint32_t external_clock_frequency_{24000000};
   GPIOPin *reset_pin_{nullptr};
   GPIOPin *pwdn_pin_{nullptr};
   uint8_t sensor_address_{0x36};
@@ -66,6 +74,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
   CameraResolution resolution_{RESOLUTION_VGA};
   PixelFormat pixel_format_{PIXEL_FORMAT_RGB565};
+  uint8_t jpeg_quality_{10};
   uint8_t framerate_{30};
   
   bool initialized_{false};
