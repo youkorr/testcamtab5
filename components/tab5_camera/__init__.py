@@ -78,9 +78,6 @@ async def to_code(config):
     await cg.register_component(var, config)
     await i2c.register_i2c_device(var, config)
     
-    # Ajouter le chemin d'include pour esp_cam_sensor_esphome
-    cg.add_build_flag("-I" + str(cg.RawExpression("$BUILD_DIR")) + "/../src/esphome/components/esp_cam_sensor_esphome")
-    
     cg.add(var.set_name(config[CONF_NAME]))
     
     ext_clock_pin = await cg.gpio_pin_expression(config[CONF_EXTERNAL_CLOCK_PIN])
