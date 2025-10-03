@@ -5,10 +5,36 @@
 #ifdef USE_ESP32_VARIANT_ESP32P4
 
 // ============================================================================
-// CODE COMPLET DU DRIVER SC202CS INTÉGRÉ
+// HEADERS ESP-IDF NÉCESSAIRES
 // ============================================================================
 
 extern "C" {
+#include "driver/i2c_master.h"
+#include "esp_cam_sensor.h"
+#include "esp_cam_sensor_detect.h"
+}
+
+// ============================================================================
+// DÉFINITIONS DES STRUCTURES MANQUANTES
+// ============================================================================
+
+extern "C" {
+
+// Type pour SCCB handle
+typedef struct esp_sccb_io_t* esp_sccb_io_handle_t;
+
+// Structure SCCB IO config
+typedef struct {
+    i2c_addr_bit_len_t dev_addr_length;
+    uint16_t device_address;
+    uint32_t scl_speed_hz;
+    uint32_t addr_bits_width;
+    uint32_t val_bits_width;
+} sccb_i2c_config_t;
+
+// ============================================================================
+// CODE COMPLET DU DRIVER SC202CS INTÉGRÉ
+// ============================================================================
 
 #include <string.h>
 #include <freertos/FreeRTOS.h>
@@ -116,19 +142,28 @@ static const sc202cs_reginfo_t init_reglist_640x480[] = {
 } // extern "C"
 
 // ============================================================================
-// IMPLÉMENTATIONS SCCB ET SENSOR (code de tab5_camera_sensor_impl.cpp intégré)
+// IMPLÉMENTATIONS SCCB ET SENSOR
 // ============================================================================
 
-
-
-extern "C" {
-
-// Structure SCCB IO
+// Structure SCCB IO interne
 struct esp_sccb_io_t {
     i2c_master_dev_handle_t i2c_dev;
     uint32_t addr_bits_width;
     uint32_t val_bits_width;
 };
+
+// Forward declarations
+esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle, 
+                          const sccb_i2c_config_t *config,
+                          esp_sccb_io_handle_t *io_handle);
+
+esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle, 
+                                       uint16_t reg_addr, 
+                                       uint8_t reg_val);
+
+esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle, 
+                                              uint16_t reg_addr, 
+                                              uint8_t *reg_val);
 
 // Implémentation de sccb_new_i2c_io
 esp_err_t sccb_new_i2c_io(i2c_master_bus_handle_t bus_handle, 
@@ -221,15 +256,9 @@ esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle,
                                        -1);
 }
 
-// Symboles faibles pour éviter les erreurs de linking
-__attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_start = {0};
-__attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_end = {0};
-
-} // extern "C"
-
-// ============================================================================
-// CODE DU DRIVER SC202CS
-// ============================================================================
+// Symboles faibles pour éviter les erreurs de linking (en dehors de extern "C")
+__attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_start = {};
+__attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_end = {};
 
 extern "C" {
 
