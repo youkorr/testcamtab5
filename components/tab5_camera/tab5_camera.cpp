@@ -132,14 +132,15 @@ bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Détection SC202CS @ 0x%02X", this->sensor_address_);
   
   // Créer un bus I2C pour communiquer avec le capteur
-  // ESPHome I2CDevice n'expose pas directement le handle ESP-IDF
   i2c_master_bus_config_t i2c_bus_config = {};
   i2c_bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
   i2c_bus_config.i2c_port = I2C_NUM_0;
-  i2c_bus_config.scl_io_num = GPIO_NUM_7;  // GPIO par défaut pour SCL sur ESP32-P4
-  i2c_bus_config.sda_io_num = GPIO_NUM_8;  // GPIO par défaut pour SDA sur ESP32-P4
+  i2c_bus_config.scl_io_num = static_cast<gpio_num_t>(this->i2c_scl_pin_);
+  i2c_bus_config.sda_io_num = static_cast<gpio_num_t>(this->i2c_sda_pin_);
   i2c_bus_config.glitch_ignore_cnt = 7;
   i2c_bus_config.flags.enable_internal_pullup = true;
+  
+  ESP_LOGI(TAG, "I2C config: SCL=%d, SDA=%d", this->i2c_scl_pin_, this->i2c_sda_pin_);
   
   i2c_master_bus_handle_t i2c_handle;
   esp_err_t ret = i2c_new_master_bus(&i2c_bus_config, &i2c_handle);
@@ -149,7 +150,6 @@ bool Tab5Camera::init_sensor_() {
   }
   
   // Les pins reset/pwdn sont gérées en dehors du sensor driver
-  // On passe -1 pour indiquer qu'elles ne sont pas utilisées par le driver
   int8_t reset = -1;
   int8_t pwdn = -1;
   
@@ -403,6 +403,7 @@ void Tab5Camera::loop() {
 void Tab5Camera::dump_config() {
   ESP_LOGCONFIG(TAG, "Tab5 Camera:");
   ESP_LOGCONFIG(TAG, "  Capteur: SC202CS @ 0x%02X", this->sensor_address_);
+  ESP_LOGCONFIG(TAG, "  I2C: SCL=%d, SDA=%d", this->i2c_scl_pin_, this->i2c_sda_pin_);
   ESP_LOGCONFIG(TAG, "  Résolution: %ux%u", 
                 this->get_image_width(), this->get_image_height());
   ESP_LOGCONFIG(TAG, "  Format: RGB565");
