@@ -122,16 +122,26 @@ void Tab5Camera::setup() {
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Détection SC202CS @ 0x%02X", this->sensor_address_);
   
-  // Récupérer le bus I2C - I2CDevice hérite du bus via get_bus_()
-  i2c_master_bus_handle_t i2c_handle = this->get_bus_();
-  if (!i2c_handle) {
-    ESP_LOGE(TAG, "I2C handle invalide");
+  // L'accès au bus I2C ESP-IDF n'est pas directement exposé par ESPHome
+  // On va créer notre propre bus I2C temporairement
+  i2c_master_bus_config_t i2c_bus_config = {};
+  i2c_bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
+  i2c_bus_config.i2c_port = I2C_NUM_0;
+  i2c_bus_config.scl_io_num = static_cast<gpio_num_t>(this->parent_->get_scl_pin());
+  i2c_bus_config.sda_io_num = static_cast<gpio_num_t>(this->parent_->get_sda_pin());
+  i2c_bus_config.glitch_ignore_cnt = 7;
+  i2c_bus_config.flags.enable_internal_pullup = true;
+  
+  i2c_master_bus_handle_t i2c_handle;
+  esp_err_t ret = i2c_new_master_bus(&i2c_bus_config, &i2c_handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "I2C bus init failed: %d", ret);
     return false;
   }
   
-  // GPIOPin utilise get_pin() uniquement en interne, on accède au numéro avec pin_
-  int8_t reset = this->reset_pin_ ? this->reset_pin_->get_pin() : -1;
-  int8_t pwdn = this->pwdn_pin_ ? this->pwdn_pin_->get_pin() : -1;
+  // GPIOPin n'a pas get_pin(), on utilise directement le numéro de pin interne
+  int8_t reset = this->reset_pin_ ? static_cast<int8_t>(this->reset_pin_->get_pin()) : -1;
+  int8_t pwdn = this->pwdn_pin_ ? static_cast<int8_t>(this->pwdn_pin_->get_pin()) : -1;
   
   this->sensor_device_ = detect_sensor_inline(
     i2c_handle, reset, pwdn, this->sensor_address_
@@ -139,6 +149,7 @@ bool Tab5Camera::init_sensor_() {
   
   if (!this->sensor_device_) {
     ESP_LOGE(TAG, "Capteur non détecté");
+    i2c_del_master_bus(i2c_handle);
     return false;
   }
   
@@ -222,17 +233,16 @@ bool Tab5Camera::init_isp_() {
   
   CameraResolutionInfo res = this->get_resolution_info_();
   
-  esp_isp_processor_cfg_t isp_config = {
-    .clk_src = ISP_CLK_SRC_DEFAULT,
-    .input_data_source = ISP_INPUT_DATA_SOURCE_CSI,
-    .has_line_start_packet = false,
-    .has_line_end_packet = false,
-    .h_res = res.width,
-    .v_res = res.height,
-    .clk_hz = 80000000,
-    .input_data_color_type = ISP_COLOR_RAW8,
-    .output_data_color_type = ISP_COLOR_RGB565,
-  };
+  esp_isp_processor_cfg_t isp_config = {};
+  isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
+  isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
+  isp_config.input_data_color_type = ISP_COLOR_RAW8;
+  isp_config.output_data_color_type = ISP_COLOR_RGB565;
+  isp_config.h_res = res.width;
+  isp_config.v_res = res.height;
+  isp_config.has_line_start_packet = false;
+  isp_config.has_line_end_packet = false;
+  isp_config.clk_hz = 80000000;
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
