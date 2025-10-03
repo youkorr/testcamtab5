@@ -4,21 +4,21 @@
 #include "esphome/core/log.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
+
 extern "C" {
-  #include "esp_video.h"
-  //#include "esp_video_init.h"
-  //#include "esp_video_device_internal.h"
-  #include "../esp_cam_sensor_esphome/esp_cam_sensor.h"
-  #include "esp_cam_ctlr_csi.h"
-  #include "driver/isp.h"
+  // Forward declarations
+  struct esp_video;
+  struct esp_cam_sensor_device;
+  typedef struct esp_cam_sensor_device esp_cam_sensor_device_t;
+  
+  // Includes ESP-IDF
   #include "esp_ldo_regulator.h"
+  #include <stdint.h>
+  #include <stddef.h>
 }
-#endif
 
 namespace esphome {
 namespace esp_video_esphome {
-
-#ifdef USE_ESP32_VARIANT_ESP32P4
 
 struct VideoConfig {
   uint16_t width;
@@ -57,7 +57,7 @@ class ESPVideoWrapper {
   static esp_ldo_channel_handle_t ldo_handle_;
 };
 
-#endif
-
 }  // namespace esp_video_esphome
 }  // namespace esphome
+
+#endif  // USE_ESP32_VARIANT_ESP32P4
