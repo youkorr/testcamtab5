@@ -5,7 +5,7 @@
 #include "esphome/components/i2c/i2c.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-#include "../esp_cam_sensor_esphome/esp_cam_sensor_wrapper.h"
+#include "esp_cam_sensor_wrapper.h"
 
 extern "C" {
   #include "esp_cam_ctlr.h"
