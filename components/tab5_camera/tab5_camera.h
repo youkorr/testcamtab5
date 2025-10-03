@@ -5,6 +5,9 @@
 #include "esphome/components/i2c/i2c.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
+// Forward declaration
+struct esp_cam_sensor_device_t;
+
 extern "C" {
   #include "esp_cam_ctlr.h"
   #include "esp_cam_ctlr_csi.h"
