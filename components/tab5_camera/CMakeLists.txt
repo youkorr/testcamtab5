@@ -6,6 +6,7 @@ idf_component_register(
         esp_driver_isp
         esp_mm
         esp_driver_cam
+        esp_cam_sensor_esphome
     PRIV_REQUIRES
         esphome
 )
