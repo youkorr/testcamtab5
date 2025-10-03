@@ -58,7 +58,10 @@ CONFIG_SCHEMA = cv.All(
         {
             cv.GenerateID(): cv.declare_id(Tab5Camera),
             cv.Optional(CONF_NAME, default="Tab5 Camera"): cv.string,
-            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=36): cv.int_range(min=0, max=50),
+            cv.Optional(CONF_EXTERNAL_CLOCK_PIN, default=36): cv.Any(
+                cv.int_range(min=0, max=50),
+                pins.internal_gpio_output_pin_schema
+            ),
             cv.Optional(CONF_FREQUENCY, default=24000000): cv.int_range(min=6000000, max=40000000),
             cv.Optional(CONF_RESET_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_ADDRESS_SENSOR_SC202CS, default=0x36): cv.i2c_address,
@@ -83,8 +86,16 @@ async def to_code(config):
     
     cg.add(var.set_name(config[CONF_NAME]))
     
-    # Juste passer le numéro de pin au lieu d'un GPIOPin
-    cg.add(var.set_external_clock_pin(config[CONF_EXTERNAL_CLOCK_PIN]))
+    # Gérer le pin externe de l'horloge (peut être un int ou un GPIO)
+    ext_clock_pin_config = config[CONF_EXTERNAL_CLOCK_PIN]
+    if isinstance(ext_clock_pin_config, int):
+        # C'est directement un numéro
+        cg.add(var.set_external_clock_pin(ext_clock_pin_config))
+    else:
+        # C'est une config GPIO, extraire le numéro
+        pin_num = ext_clock_pin_config[pins.CONF_NUMBER]
+        cg.add(var.set_external_clock_pin(pin_num))
+    
     cg.add(var.set_external_clock_frequency(config[CONF_FREQUENCY]))
     
     cg.add(var.set_sensor_address(config[CONF_ADDRESS_SENSOR_SC202CS]))
