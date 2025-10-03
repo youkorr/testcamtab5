@@ -8,7 +8,7 @@
 
 #include "esp_err.h"
 #include "esp_check.h"
-#include "esp_cam_sensor_types.h"
+//#include "esp_cam_sensor_types.h"
 
 #ifdef __cplusplus
 extern "C" {
