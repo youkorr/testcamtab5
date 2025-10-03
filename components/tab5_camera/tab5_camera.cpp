@@ -122,13 +122,14 @@ void Tab5Camera::setup() {
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Détection SC202CS @ 0x%02X", this->sensor_address_);
   
-  // Récupérer le bus I2C depuis le parent I2CDevice
-  i2c_master_bus_handle_t i2c_handle = this->parent_->get_bus();
+  // Récupérer le bus I2C - I2CDevice hérite du bus via get_bus_()
+  i2c_master_bus_handle_t i2c_handle = this->get_bus_();
   if (!i2c_handle) {
     ESP_LOGE(TAG, "I2C handle invalide");
     return false;
   }
   
+  // GPIOPin utilise get_pin() uniquement en interne, on accède au numéro avec pin_
   int8_t reset = this->reset_pin_ ? this->reset_pin_->get_pin() : -1;
   int8_t pwdn = this->pwdn_pin_ ? this->pwdn_pin_->get_pin() : -1;
   
@@ -176,18 +177,17 @@ bool Tab5Camera::init_csi_() {
   
   CameraResolutionInfo res = this->get_resolution_info_();
   
-  esp_cam_ctlr_csi_config_t csi_config = {
-    .ctlr_id = 0,
-    .clk_src = MIPI_CSI_PHY_CLK_SRC_DEFAULT,
-    .byte_swap_en = false,
-    .queue_items = 3,
-    .h_res = res.width,
-    .v_res = res.height,
-    .data_lane_num = 1,
-    .input_data_color_type = CAM_CTLR_COLOR_RAW8,
-    .output_data_color_type = CAM_CTLR_COLOR_RGB565,
-    .lane_bit_rate_mbps = 576,
-  };
+  esp_cam_ctlr_csi_config_t csi_config = {};
+  csi_config.ctlr_id = 0;
+  csi_config.clk_src = MIPI_CSI_PHY_CLK_SRC_DEFAULT;
+  csi_config.h_res = res.width;
+  csi_config.v_res = res.height;
+  csi_config.lane_bit_rate_mbps = 576;
+  csi_config.input_data_color_type = CAM_CTLR_COLOR_RAW8;
+  csi_config.output_data_color_type = CAM_CTLR_COLOR_RGB565;
+  csi_config.data_lane_num = 1;
+  csi_config.byte_swap_en = false;
+  csi_config.queue_items = 3;
   
   esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->csi_handle_);
   if (ret != ESP_OK) {
