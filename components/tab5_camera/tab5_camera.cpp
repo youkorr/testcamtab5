@@ -341,20 +341,11 @@ bool Tab5Camera::start_streaming() {
   
   ESP_LOGI(TAG, "Démarrage streaming");
   
-  // Démarrer le capteur
-  int enable = 1;
-  esp_err_t ret = esp_cam_sensor_ioctl(this->sensor_device_, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Start sensor failed: %d", ret);
-    return false;
-  }
-  
-  // Démarrer CSI
-  ret = esp_cam_ctlr_start(this->csi_handle_);
+  // Le capteur devrait déjà être configuré via les registres par défaut
+  // On démarre juste le CSI controller
+  esp_err_t ret = esp_cam_ctlr_start(this->csi_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Start CSI failed: %d", ret);
-    enable = 0;
-    esp_cam_sensor_ioctl(this->sensor_device_, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
     return false;
   }
   
@@ -369,8 +360,6 @@ bool Tab5Camera::stop_streaming() {
   }
   
   esp_cam_ctlr_stop(this->csi_handle_);
-  int enable = 0;
-  esp_cam_sensor_ioctl(this->sensor_device_, ESP_CAM_SENSOR_IOC_S_STREAM, &enable);
   
   this->streaming_ = false;
   ESP_LOGI(TAG, "⏹ Streaming arrêté");
