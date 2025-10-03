@@ -1,11 +1,22 @@
 #include "esp_video_wrapper.h"
 
+#ifdef USE_ESP32_VARIANT_ESP32P4
+
+// Includes complets ici dans le .cpp
+extern "C" {
+  #include "esp_video.h"
+  //#include "esp_video_init.h"
+  //#include "esp_video_device_internal.h"
+  #include "../esp_cam_sensor_esphome/esp_cam_sensor.h"
+  #include "esp_cam_ctlr_csi.h"
+  #include "driver/isp.h"
+  #include "esp_ldo_regulator.h"
+}
+
 namespace esphome {
 namespace esp_video_esphome {
 
 static const char *const TAG = "esp_video";
-
-#ifdef USE_ESP32_VARIANT_ESP32P4
 
 // Variables statiques
 struct esp_video *ESPVideoWrapper::video_device_ = nullptr;
@@ -220,7 +231,7 @@ void ESPVideoWrapper::cleanup() {
   ESP_LOGI(TAG, "Système vidéo nettoyé");
 }
 
-#endif
-
 }  // namespace esp_video_esphome
 }  // namespace esphome
+
+#endif  // USE_ESP32_VARIANT_ESP32P4
