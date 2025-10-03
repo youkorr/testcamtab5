@@ -1,12 +1,8 @@
-#pragma once
-
-#include "esphome/core/component.h"
-#include "esphome/core/hal.h"
-#include "esphome/components/i2c/i2c.h"
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
-// Forward declarations
-struct esp_cam_sensor_device;
+// Forward declaration
+struct esp_cam_sensor_device_t;
+typedef struct esp_cam_sensor_device_t esp_cam_sensor_device_t;
 
 extern "C" {
   #include "esp_cam_ctlr.h"
