@@ -4,7 +4,53 @@
 
 #ifdef USE_ESP32_VARIANT_ESP32P4
 extern "C" {
-  #include "esp_cam_sensor_wrapper.h"
+  #include "esp_cam_sensor.h"
+  #include "esp_cam_sensor_detect.h"
+  #include "esp_sccb_i2c.h"
+}
+
+// Inline wrapper functions
+namespace {
+  esp_cam_sensor_device_t* detect_sensor_inline(
+    i2c_master_bus_handle_t i2c_handle,
+    int8_t reset_pin,
+    int8_t pwdn_pin,
+    uint8_t sccb_addr
+  ) {
+    esp_sccb_io_handle_t sccb_handle;
+    sccb_i2c_config_t sccb_config = {
+      .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+      .device_address = sccb_addr,
+      .scl_speed_hz = 400000
+    };
+    
+    esp_err_t ret = sccb_new_i2c_io(i2c_handle, &sccb_config, &sccb_handle);
+    if (ret != ESP_OK) {
+      return nullptr;
+    }
+    
+    esp_cam_sensor_config_t sensor_config = {
+      .sccb_handle = sccb_handle,
+      .reset_pin = reset_pin,
+      .pwdn_pin = pwdn_pin,
+      .xclk_pin = -1,
+      .xclk_freq_hz = 24000000,
+      .sensor_port = ESP_CAM_SENSOR_MIPI_CSI
+    };
+    
+    for (esp_cam_sensor_detect_fn_t *p = &__esp_cam_sensor_detect_fn_array_start;
+         p < &__esp_cam_sensor_detect_fn_array_end; ++p) {
+      
+      if (p->port == ESP_CAM_SENSOR_MIPI_CSI && p->sccb_addr == sccb_addr) {
+        esp_cam_sensor_device_t *dev = p->detect(&sensor_config);
+        if (dev != nullptr) {
+          return dev;
+        }
+      }
+    }
+    
+    return nullptr;
+  }
 }
 #endif
 
