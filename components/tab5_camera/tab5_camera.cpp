@@ -964,7 +964,7 @@ void Tab5Camera::configure_isp_color_correction_() {
   color_config.color_contrast = {128, 128, 128};
   color_config.color_saturation = {128, 128, 128};
   color_config.color_hue = 0;
-  color_config.color_brightness = 0;
+  color_config.color_brightness = 1;
   
   esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret == ESP_OK) {
