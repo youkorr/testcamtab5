@@ -11,10 +11,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 
-#include "esp_cam_sensor.h"
-#include "esp_cam_sensor_detect.h"
-#include "sc202cs_settings.h"
-#include "sc202cs.h"
+
 
 /*
  * SC202CS camera sensor gain control.
