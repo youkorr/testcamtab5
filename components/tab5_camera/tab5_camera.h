@@ -59,11 +59,6 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
   void set_i2c_pins(uint8_t scl, uint8_t sda) { this->i2c_scl_pin_ = scl; this->i2c_sda_pin_ = sda; }
 
-  void set_ccm_red_gain(float value);
-  void set_ccm_green_gain(float value);
-  void set_ccm_blue_gain(float value);
-  void set_sensor_gain(uint32_t value);
-  void set_sensor_exposure(uint32_t value);
 
 
   // Opérations
@@ -95,11 +90,6 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
 
   bool flip_mirror_{false};
 
-  float ccm_red_gain_{0};
-  float ccm_green_gain_{0};
-  float ccm_blue_gain_{0};
-  uint32_t sensor_gain_{0};
-  uint32_t sensor_exposure_{0};
   
   bool initialized_{false};
   bool streaming_{false};
