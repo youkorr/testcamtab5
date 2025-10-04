@@ -828,13 +828,13 @@ bool Tab5Camera::init_isp_() {
   }
   
   // ============================================================================
-  // CONFIGURATION COLOR - Définir le Bayer pattern BGGR
+  // CONFIGURATION COLOR - Ajuster contraste/saturation/luminosité
   // ============================================================================
   esp_isp_color_config_t color_config = {};
   color_config.color_contrast.val = 128;  // Contraste par défaut
   color_config.color_saturation.val = 128;  // Saturation par défaut
-  color_config.color_hue.val = 0;  // Teinte neutre
-  color_config.color_brightness.val = 0;  // Luminosité neutre
+  color_config.color_hue = 0;  // Teinte neutre
+  color_config.color_brightness = 0;  // Luminosité neutre
   
   ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret != ESP_OK) {
