@@ -24,12 +24,13 @@ CONF_FRAMERATE = "framerate"
 CONF_EXTERNAL_CLOCK_PIN = "external_clock_pin"
 CONF_RESET_PIN = "reset_pin"
 CONF_ADDRESS_SENSOR_SC202CS = "address_sensor_sc202cs"
+CONF_FLIP_MIRROR = "flip_mirror"
 
 # Déclarer les enums C++
 CameraResolution = tab5_camera_ns.enum("CameraResolution")
-RESOLUTION_1080P = CameraResolution.RESOLUTION_1080P
-RESOLUTION_720P = CameraResolution.RESOLUTION_720P
 RESOLUTION_VGA = CameraResolution.RESOLUTION_VGA
+RESOLUTION_720P = CameraResolution.RESOLUTION_720P
+RESOLUTION_1080P = CameraResolution.RESOLUTION_1080P
 RESOLUTION_QVGA = CameraResolution.RESOLUTION_QVGA
 
 PixelFormat = tab5_camera_ns.enum("PixelFormat")
@@ -40,9 +41,9 @@ PIXEL_FORMAT_JPEG = PixelFormat.PIXEL_FORMAT_JPEG
 
 # Mapping pour validation YAML
 CAMERA_RESOLUTIONS = {
-    "1080P": RESOLUTION_1080P,
-    "720P": RESOLUTION_720P,
     "VGA": RESOLUTION_VGA,
+    "720P": RESOLUTION_720P,
+    "1080P": RESOLUTION_1080P,
     "QVGA": RESOLUTION_QVGA,
 }
 
@@ -69,6 +70,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_PIXEL_FORMAT, default="RGB565"): cv.enum(PIXEL_FORMATS, upper=True),
             cv.Optional(CONF_JPEG_QUALITY, default=10): cv.int_range(min=1, max=63),
             cv.Optional(CONF_FRAMERATE, default=30): cv.int_range(min=1, max=60),
+            cv.Optional(CONF_FLIP_MIRROR, default=False): cv.boolean,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -83,26 +85,25 @@ async def to_code(config):
     
     cg.add(var.set_name(config[CONF_NAME]))
     
-    # Gérer le pin externe de l'horloge (peut être un int ou un GPIO)
+    # Gérer le pin externe de l'horloge
     ext_clock_pin_config = config[CONF_EXTERNAL_CLOCK_PIN]
     if isinstance(ext_clock_pin_config, int):
-        # C'est directement un numéro
         cg.add(var.set_external_clock_pin(ext_clock_pin_config))
     else:
-        # C'est une config GPIO, extraire le numéro
         pin_num = ext_clock_pin_config[pins.CONF_NUMBER]
         cg.add(var.set_external_clock_pin(pin_num))
     
     cg.add(var.set_external_clock_frequency(config[CONF_FREQUENCY]))
-    
     cg.add(var.set_sensor_address(config[CONF_ADDRESS_SENSOR_SC202CS]))
     
-    # Les valeurs sont déjà des enums C++ grâce à cv.enum()
+    # Configuration résolution et format
     cg.add(var.set_resolution(config[CONF_RESOLUTION]))
     cg.add(var.set_pixel_format(config[CONF_PIXEL_FORMAT]))
-    
     cg.add(var.set_jpeg_quality(config[CONF_JPEG_QUALITY]))
     cg.add(var.set_framerate(config[CONF_FRAMERATE]))
+    
+    # Flip/Mirror
+    cg.add(var.set_flip_mirror(config[CONF_FLIP_MIRROR]))
     
     if CONF_RESET_PIN in config:
         reset_pin = await cg.gpio_pin_expression(config[CONF_RESET_PIN])
