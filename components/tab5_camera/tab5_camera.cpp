@@ -286,19 +286,17 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x3e02, 0xc0},          {0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
     // Configuration directe sans windowing - résolution native
-    {0x3200, 0x00},          {0x3201, 0x00},  // Start X = 0
-    {0x3202, 0x00},          {0x3203, 0x00},  // Start Y = 0
-    {0x3204, 0x05},          {0x3205, 0x07},  // End X = 1287
-    {0x3206, 0x02},          {0x3207, 0xd7},  // End Y = 727
-    {0x3208, 0x02},          {0x3209, 0x80},  // Width = 640
-    {0x320a, 0x01},          {0x320b, 0xe0},  // Height = 480
-    {0x3210, 0x00},          {0x3211, 0x04},  // X offset = 4
-    {0x3212, 0x00},          {0x3213, 0x02},  // Y offset = 2
-    // VTS/HTS pour 30fps
-    {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
-    {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
-    // CORRECTION: Binning 2x2 SANS flip/mirror (0x00 au lieu de 0x66)
-    {0x3221, 0x00},  // Binning sans flip/mirror
+    {0x3200, 0x00},          {0x3201, 0x00},
+    {0x3202, 0x00},          {0x3203, 0x00},
+    {0x3204, 0x05},          {0x3205, 0x07},
+    {0x3206, 0x02},          {0x3207, 0xd7},
+    {0x3208, 0x02},          {0x3209, 0x80},
+    {0x320a, 0x01},          {0x320b, 0xe0},
+    {0x3210, 0x00},          {0x3211, 0x04},
+    {0x3212, 0x00},          {0x3213, 0x02},
+    {0x320c, 0x07},          {0x320d, 0x80},
+    {0x320e, 0x04},          {0x320f, 0xe2},
+    {0x3221, 0x00},
     {SC202CS_REG_END, 0x00},
 };
 
@@ -308,7 +306,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
 // IMPLÉMENTATIONS SCCB ET SENSOR
 // ============================================================================
 
-// Structure SCCB IO interne (utilise ESPHome I2C au lieu d'ESP-IDF)
+// Structure SCCB IO interne
 struct esp_sccb_io_t {
     esphome::i2c::I2CDevice *i2c_device;
     uint32_t addr_bits_width;
@@ -374,7 +372,7 @@ esp_err_t esp_cam_sensor_ioctl(esp_cam_sensor_device_t *dev,
     return dev->ops->priv_ioctl(dev, cmd, arg);
 }
 
-// Implémentations des fonctions SCCB pour communication I2C
+// Implémentations des fonctions SCCB
 esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle, 
                                        uint16_t reg_addr, 
                                        uint8_t reg_val) {
@@ -413,7 +411,7 @@ esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle,
     return (err == esphome::i2c::ERROR_OK) ? ESP_OK : ESP_FAIL;
 }
 
-// Symboles faibles pour éviter les erreurs de linking
+// Symboles faibles
 __attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_start = {};
 __attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_end = {};
 
@@ -421,7 +419,6 @@ extern "C" {
 
 static const char *SC202CS_TAG = "sc202cs";
 
-// Fonctions SCCB de lecture/écriture
 static esp_err_t sc202cs_write(esp_sccb_io_handle_t handle, uint16_t reg, uint8_t data) {
     return esp_sccb_transmit_reg_a16v8(handle, reg, data);
 }
@@ -444,7 +441,6 @@ static esp_err_t sc202cs_write_array(esp_sccb_io_handle_t handle, sc202cs_reginf
     return ret;
 }
 
-// Fonction pour définir des bits dans un registre
 static esp_err_t sc202cs_set_reg_bits(esp_sccb_io_handle_t handle, 
                                        uint16_t reg, 
                                        uint8_t offset, 
@@ -464,12 +460,10 @@ static esp_err_t sc202cs_set_reg_bits(esp_sccb_io_handle_t handle,
     return ret;
 }
 
-// Fonction pour activer le mirror (flip horizontal)
 static esp_err_t sc202cs_set_mirror(esp_cam_sensor_device_t *dev, int enable) {
     return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 1, 2, enable ? 0x03 : 0x00);
 }
 
-// Fonction pour activer le vflip (flip vertical)
 static esp_err_t sc202cs_set_vflip(esp_cam_sensor_device_t *dev, int enable) {
     return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 5, 2, enable ? 0x03 : 0x00);
 }
@@ -494,36 +488,31 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
 }
 
 static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
-    // Si format est NULL, utiliser la config par défaut depuis dev->priv
     const sc202cs_reginfo_t *reg_list = NULL;
     
     if (format != NULL) {
-        // Format spécifié explicitement
         const esp_cam_sensor_format_t *fmt = (const esp_cam_sensor_format_t *)format;
         reg_list = (const sc202cs_reginfo_t *)fmt->regs;
     } else if (dev->priv != NULL) {
-        // Utiliser la résolution stockée dans priv
         uint32_t resolution_index = *(uint32_t*)dev->priv;
         
         switch (resolution_index) {
-            case 0: // VGA 640x480
+            case 0:
                 reg_list = init_reglist_640x480_30fps;
                 ESP_LOGI(SC202CS_TAG, "Config: VGA 640x480@30fps");
                 break;
-            case 1: // 720P 1280x720
+            case 1:
                 reg_list = init_reglist_1280x720_30fps;
                 ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps");
                 break;
-            case 2: // 1080P (si disponible)
-            case 3: // QVGA (si disponible)
+            case 2:
+            case 3:
             default:
-                // Par défaut, utiliser 720P
                 reg_list = init_reglist_1280x720_30fps;
                 ESP_LOGE(SC202CS_TAG, "Résolution non supportée, utilisation 720P");
                 break;
         }
     } else {
-        // Fallback absolu
         reg_list = init_reglist_1280x720_30fps;
         ESP_LOGW(SC202CS_TAG, "Format par défaut: 720P");
     }
@@ -544,21 +533,20 @@ static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *fo
     return ESP_OK;
 }
 
-// CORRECTION: Support flip/mirror via IOCTL
 static esp_err_t sc202cs_priv_ioctl(esp_cam_sensor_device_t *dev, uint32_t cmd, void *arg) {
     esp_err_t ret = ESP_OK;
     
     switch (cmd) {
-        case 0x04000004: // ESP_CAM_SENSOR_IOC_S_STREAM
+        case 0x04000004:
             ret = sc202cs_set_stream(dev, *(int*)arg);
             break;
             
-        case 0x04000010: // ESP_CAM_SENSOR_IOC_S_VFLIP
+        case 0x04000010:
             ret = sc202cs_set_vflip(dev, *(int*)arg);
             ESP_LOGI(SC202CS_TAG, "VFlip: %d", *(int*)arg);
             break;
             
-        case 0x04000011: // ESP_CAM_SENSOR_IOC_S_HMIRROR
+        case 0x04000011:
             ret = sc202cs_set_mirror(dev, *(int*)arg);
             ESP_LOGI(SC202CS_TAG, "HMirror: %d", *(int*)arg);
             break;
@@ -603,7 +591,6 @@ esp_cam_sensor_device_t *sc202cs_detect(esp_cam_sensor_config_t *config) {
     dev->sensor_port = config->sensor_port;
     dev->ops = &sc202cs_ops;
     
-    // Vérifier l'ID du capteur
     if (sc202cs_get_sensor_id(dev, &dev->id) != ESP_OK) {
         ESP_LOGE(SC202CS_TAG, "Get sensor ID failed");
         free(dev);
@@ -638,7 +625,6 @@ void Tab5Camera::setup() {
   ESP_LOGI(TAG, "🎥 Initialisation Tab5 Camera");
   
 #ifdef USE_ESP32_VARIANT_ESP32P4
-  // 1. Init pins
   if (this->reset_pin_ != nullptr) {
     this->reset_pin_->setup();
     this->reset_pin_->digital_write(false);
@@ -652,35 +638,30 @@ void Tab5Camera::setup() {
     this->pwdn_pin_->digital_write(false);
   }
   
-  // 2. Init capteur SC202CS
   if (!this->init_sensor_()) {
     ESP_LOGE(TAG, "❌ Échec init capteur");
     this->mark_failed();
     return;
   }
   
-  // 3. Init LDO pour MIPI
   if (!this->init_ldo_()) {
     ESP_LOGE(TAG, "❌ Échec init LDO");
     this->mark_failed();
     return;
   }
   
-  // 4. Init CSI
   if (!this->init_csi_()) {
     ESP_LOGE(TAG, "❌ Échec init CSI");
     this->mark_failed();
     return;
   }
   
-  // 5. Init ISP
   if (!this->init_isp_()) {
     ESP_LOGE(TAG, "❌ Échec init ISP");
     this->mark_failed();
     return;
   }
   
-  // 6. Allouer le buffer
   if (!this->allocate_buffer_()) {
     ESP_LOGE(TAG, "❌ Échec allocation buffer");
     this->mark_failed();
@@ -701,7 +682,6 @@ void Tab5Camera::setup() {
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Init capteur SC202CS");
   
-  // Configurer SCCB pour SC202CS
   sccb_i2c_config_t sccb_config = {};
   sccb_config.device_address = this->sensor_address_;
   sccb_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
@@ -718,7 +698,6 @@ bool Tab5Camera::init_sensor_() {
   
   ESP_LOGI(TAG, "✓ SCCB initialisé via ESPHome I2C");
   
-  // NOUVEAU: Allouer priv pour stocker la résolution
   uint32_t *resolution_ptr = (uint32_t*)malloc(sizeof(uint32_t));
   if (!resolution_ptr) {
     ESP_LOGE(TAG, "Erreur allocation mémoire pour résolution");
@@ -726,7 +705,6 @@ bool Tab5Camera::init_sensor_() {
   }
   *resolution_ptr = (uint32_t)this->resolution_;
   
-  // Configurer le capteur
   esp_cam_sensor_config_t sensor_config = {};
   sensor_config.sccb_handle = sccb_handle;
   sensor_config.reset_pin = -1;
@@ -735,7 +713,6 @@ bool Tab5Camera::init_sensor_() {
   sensor_config.xclk_freq_hz = this->external_clock_frequency_;
   sensor_config.sensor_port = ESP_CAM_SENSOR_MIPI_CSI;
   
-  // Détecter et initialiser le capteur
   this->sensor_device_ = sc202cs_detect(&sensor_config);
   
   if (this->sensor_device_ == nullptr) {
@@ -744,10 +721,8 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
-  // IMPORTANT: Stocker la résolution dans priv
   this->sensor_device_->priv = resolution_ptr;
   
-  // Configurer le format avec la résolution
   if (sc202cs_set_format(this->sensor_device_, NULL) != ESP_OK) {
     ESP_LOGE(TAG, "Failed to set format");
     free(resolution_ptr);
@@ -756,11 +731,10 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
-  // NOUVEAU: Appliquer flip/mirror si configuré
   if (this->flip_mirror_) {
     int enable = 1;
-    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000010, &enable); // VFlip
-    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000011, &enable); // HMirror
+    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000010, &enable);
+    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000011, &enable);
     ESP_LOGI(TAG, "✓ Flip/Mirror activé");
   }
   
@@ -809,7 +783,6 @@ bool Tab5Camera::init_csi_() {
     return false;
   }
   
-  // Callbacks
   esp_cam_ctlr_evt_cbs_t callbacks = {
     .on_get_new_trans = Tab5Camera::on_csi_new_frame_,
     .on_trans_finished = Tab5Camera::on_csi_frame_done_,
@@ -832,10 +805,11 @@ bool Tab5Camera::init_csi_() {
 }
 
 bool Tab5Camera::init_isp_() {
-  ESP_LOGI(TAG, "Init ISP");
+  ESP_LOGI(TAG, "Init ISP avec AWB/AE");
   
   CameraResolutionInfo res = this->get_resolution_info_();
   
+  // Configuration de base ISP
   esp_isp_processor_cfg_t isp_config = {};
   isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
   isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
@@ -853,13 +827,128 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
+  // ============================================================================
+  // CONFIGURATION AWB (Auto White Balance) - ESSENTIEL pour corriger la teinte verte
+  // ============================================================================
+  isp_awb_config_t awb_config = {};
+  awb_config.sample_point = ISP_AWB_SAMPLE_POINT_AFTER_CCM;
+  
+  isp_awb_ctlr_t awb_handle = NULL;
+  ret = esp_isp_awb_controller_new(this->isp_handle_, &awb_config, &awb_handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "AWB controller failed: %d", ret);
+    return false;
+  }
+  
+  isp_awb_stat_cfg_t awb_stat_config = {};
+  awb_stat_config.window = {
+    .top_left = {.x = 0, .y = 0},
+    .btm_right = {.x = res.width, .y = res.height}
+  };
+  awb_stat_config.rgb_coeff = {
+    .coeff_r = {128, 128, 128},
+    .coeff_g = {128, 128, 128},
+    .coeff_b = {128, 128, 128}
+  };
+  
+  ret = esp_isp_awb_controller_set_stats_config(awb_handle, &awb_stat_config);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "AWB stats config failed: %d", ret);
+    return false;
+  }
+  
+  ret = esp_isp_awb_controller_enable(awb_handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "AWB enable failed: %d", ret);
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "✓ AWB configuré");
+  
+  // ============================================================================
+  // CONFIGURATION AE (Auto Exposure) - Pour améliorer la luminosité
+  // ============================================================================
+  isp_ae_config_t ae_config = {};
+  ae_config.sample_point = ISP_AE_SAMPLE_POINT_AFTER_DEMOSAIC;
+  
+  isp_ae_ctlr_t ae_handle = NULL;
+  ret = esp_isp_ae_controller_new(this->isp_handle_, &ae_config, &ae_handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "AE controller failed: %d", ret);
+    return false;
+  }
+  
+  isp_ae_stat_cfg_t ae_stat_config = {};
+  ae_stat_config.window = {
+    .top_left = {.x = 0, .y = 0},
+    .btm_right = {.x = res.width, .y = res.height}
+  };
+  ae_stat_config.weight = ISP_AE_WEIGHT_MODE_AVG;
+  
+  ret = esp_isp_ae_controller_set_stats_config(ae_handle, &ae_stat_config);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "AE stats config failed: %d", ret);
+    return false;
+  }
+  
+  ret = esp_isp_ae_controller_enable(ae_handle);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "AE enable failed: %d", ret);
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "✓ AE configuré");
+  
+  // ============================================================================
+  // CONFIGURATION BF (Black Level & Gain)
+  // ============================================================================
+  isp_bf_config_t bf_config = {};
+  bf_config.denoising_level = 8;
+  bf_config.padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA;
+  bf_config.bf_template = ISP_BF_TEMPLATE_5X5;
+  bf_config.padding_data = 0;
+  bf_config.padding_line_tail_valid_start_pixel = 0;
+  bf_config.padding_line_tail_valid_end_pixel = 0;
+  
+  ret = esp_isp_bf_configure(this->isp_handle_, &bf_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "BF config failed (optional): %d", ret);
+  } else {
+    ret = esp_isp_bf_enable(this->isp_handle_);
+    if (ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ BF configuré");
+    }
+  }
+  
+  // ============================================================================
+  // CONFIGURATION CCM (Color Correction Matrix)
+  // ============================================================================
+  isp_ccm_config_t ccm_config = {};
+  ccm_config.matrix = {
+    1.2f,  -0.1f, -0.1f,
+    -0.1f,  1.0f, -0.1f,
+    -0.1f, -0.1f,  1.2f
+  };
+  ccm_config.saturation = true;
+  
+  ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "CCM config failed (optional): %d", ret);
+  } else {
+    ret = esp_isp_ccm_enable(this->isp_handle_);
+    if (ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ CCM configuré");
+    }
+  }
+  
+  // Activer l'ISP
   ret = esp_isp_enable(this->isp_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "ISP enable failed: %d", ret);
     return false;
   }
   
-  ESP_LOGI(TAG, "✓ ISP OK");
+  ESP_LOGI(TAG, "✅ ISP OK avec AWB + AE + CCM");
   return true;
 }
 
@@ -918,7 +1007,6 @@ CameraResolutionInfo Tab5Camera::get_resolution_info_() const {
   switch (this->resolution_) {
     case RESOLUTION_720P: return {1280, 720};
     case RESOLUTION_1080P: return {1920, 1080};
-    //case RESOLUTION_QVGA: return {320, 240};
     case RESOLUTION_VGA:
     default: return {640, 480};
   }
@@ -931,11 +1019,9 @@ bool Tab5Camera::start_streaming() {
   
   ESP_LOGI(TAG, "Démarrage streaming");
   
-  // IMPORTANT: Vérifier la résolution configurée
   CameraResolutionInfo res = this->get_resolution_info_();
   ESP_LOGI(TAG, "Résolution active: %ux%u", res.width, res.height);
   
-  // Démarrer le capteur
   if (this->sensor_device_) {
     int enable = 1;
     esp_err_t ret = esp_cam_sensor_ioctl(
@@ -948,11 +1034,9 @@ bool Tab5Camera::start_streaming() {
       return false;
     }
     
-    // Délai pour que le capteur démarre complètement
     delay(100);
   }
   
-  // Démarrer CSI
   esp_err_t ret = esp_cam_ctlr_start(this->csi_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Start CSI failed: %d", ret);
