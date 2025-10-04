@@ -28,6 +28,11 @@ class LVGLCameraDisplay : public Component {
   uint32_t update_interval_{100};  // 100ms = 10 FPS
   uint32_t last_update_{0};
   
+  // Variables pour contrôle des logs
+  uint32_t frame_count_{0};
+  bool first_update_{true};
+  bool canvas_warning_shown_{false};
+  
   void update_canvas_();
 };
 
