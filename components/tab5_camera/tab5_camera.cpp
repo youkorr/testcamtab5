@@ -918,26 +918,29 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ CCM activée");
   }
   
-  // Configuration Gamma (API ESP-IDF 5.4.2)
-isp_gamma_curve_points_t gamma_pts = {};
-// Les points doivent commencer à x=0 et être strictement croissants
-for (int i = 0; i < ISP_GAMMA_CURVE_POINTS_NUM; i++) {
-    gamma_pts.pt[i].x = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);  // De 0 à 1023
-    gamma_pts.pt[i].y = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);  // Linéaire 1:1
-}
-
-ret = esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_R, &gamma_pts);
-ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_G, &gamma_pts);
-ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_B, &gamma_pts);
-
-if (ret == ESP_OK) {
+  // Configuration Gamma - CORRIGÉE
+  isp_gamma_curve_points_t gamma_pts = {};
+  for (int i = 0; i < ISP_GAMMA_CURVE_POINTS_NUM; i++) {
+    gamma_pts.pt[i].x = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);
+    gamma_pts.pt[i].y = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);
+  }
+  
+  ret = esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_R, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_G, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_B, &gamma_pts);
+  
+  if (ret == ESP_OK) {
     ret = esp_isp_gamma_enable(this->isp_handle_);
     if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "✓ Gamma activée");
+      ESP_LOGI(TAG, "✓ Gamma activée");
     }
-} else {
-    ESP_LOGW(TAG, "⚠ Gamma config échouée, désactivée");
-}
+  }
+  
+  ESP_LOGI(TAG, "✓ ISP OK");
+  return true;
+}  
+
+#endif  // USE_ESP32_VARIANT_ESP32P4
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
   this->frame_buffer_size_ = res.width * res.height * 2;
