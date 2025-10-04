@@ -828,17 +828,24 @@ bool Tab5Camera::init_isp_() {
   }
   
   // ============================================================================
-  // CONFIGURATION BAYER PATTERN - CRITIQUE pour les bonnes couleurs
+  // CONFIGURATION COLOR - Définir le Bayer pattern BGGR
   // ============================================================================
-  esp_isp_bayer_config_t bayer_config = {};
-  bayer_config.bayer_type = ISP_BAYER_BGGR;  // SC202CS utilise BGGR
+  esp_isp_color_config_t color_config = {};
+  color_config.color_contrast.val = 128;  // Contraste par défaut
+  color_config.color_saturation.val = 128;  // Saturation par défaut
+  color_config.color_hue.val = 0;  // Teinte neutre
+  color_config.color_brightness.val = 0;  // Luminosité neutre
   
-  ret = esp_isp_bayer_configure(this->isp_handle_, &bayer_config);
+  ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Bayer configure failed: %d", ret);
-    // C'est critique, mais on continue quand même
+    ESP_LOGW(TAG, "Color configure failed: %d", ret);
   } else {
-    ESP_LOGI(TAG, "✓ Bayer pattern configuré: BGGR");
+    ret = esp_isp_color_enable(this->isp_handle_);
+    if (ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ Color configuré");
+    } else {
+      ESP_LOGW(TAG, "Color enable failed: %d", ret);
+    }
   }
   
   // ============================================================================
@@ -912,7 +919,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✅ ISP configuré avec Bayer BGGR");
+  ESP_LOGI(TAG, "✅ ISP configuré");
   return true;
 }
 
