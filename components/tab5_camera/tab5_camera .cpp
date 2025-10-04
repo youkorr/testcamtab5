@@ -854,7 +854,7 @@ bool Tab5Camera::init_isp_() {
   isp_config.clk_hz = isp_clock_hz;
   
   // CRITIQUE: Spécifier le Bayer pattern BGGR du SC202CS
-  isp_config.bayer_mode = ISP_BF_BGGR;  // Pattern du SC202CS
+  isp_config.bayer_order = ISP_BGGR;  // Pattern du SC202CS 
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
