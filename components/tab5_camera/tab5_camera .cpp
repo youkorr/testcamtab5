@@ -836,6 +836,12 @@ bool Tab5Camera::init_isp_() {
   
   CameraResolutionInfo res = this->get_resolution_info_();
   
+  // Ajuster la fréquence ISP selon la résolution
+  uint32_t isp_clock_hz = 80000000;
+  if (this->resolution_ == RESOLUTION_720P) {
+    isp_clock_hz = 120000000;
+  }
+  
   esp_isp_processor_cfg_t isp_config = {};
   isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
   isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
@@ -845,7 +851,10 @@ bool Tab5Camera::init_isp_() {
   isp_config.v_res = res.height;
   isp_config.has_line_start_packet = false;
   isp_config.has_line_end_packet = false;
-  isp_config.clk_hz = 80000000;
+  isp_config.clk_hz = isp_clock_hz;
+  
+  // CRITIQUE: Spécifier le Bayer pattern BGGR du SC202CS
+  isp_config.bayer_mode = ISP_BF_BGGR;  // Pattern du SC202CS
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
@@ -859,8 +868,45 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✓ ISP OK");
+  ESP_LOGI(TAG, "✓ ISP OK (clk=%u MHz, bayer=BGGR)", isp_clock_hz / 1000000);
+  
+  // Optionnel: Configurer des corrections d'image si disponibles
+  this->configure_isp_color_correction_();
+  
   return true;
+}
+
+void Tab5Camera::configure_isp_color_correction_() {
+  // Cette fonction configure des corrections de couleur optionnelles
+  // Si les APIs ne sont pas disponibles, elle ne fera rien
+  
+#ifdef CONFIG_ISP_COLOR_ENABLED
+  esp_isp_color_config_t color_config = {};
+  color_config.color_contrast = {128, 128, 128};  // Contraste neutre
+  color_config.color_saturation = {128, 128, 128};  // Saturation normale
+  color_config.color_hue = 0;  // Pas de rotation de teinte
+  color_config.color_brightness = 0;  // Luminosité normale
+  
+  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
+  if (ret == ESP_OK) {
+    ESP_LOGI(TAG, "✓ Color correction configurée");
+  } else {
+    ESP_LOGD(TAG, "Color correction non disponible (normal)");
+  }
+#endif
+
+  // Tenter d'activer l'Auto White Balance si disponible
+  if (this->sensor_device_) {
+    int awb_enable = 1;
+    esp_err_t ret = esp_cam_sensor_ioctl(
+      this->sensor_device_, 
+      ESP_CAM_SENSOR_AWB,  // 0x03010001
+      &awb_enable
+    );
+    if (ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ AWB activé");
+    }
+  }
 }
 
 bool Tab5Camera::allocate_buffer_() {
