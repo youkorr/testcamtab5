@@ -213,7 +213,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {SC202CS_REG_END, 0x00},
 };
 // Configuration 640x480 RAW8
-static const sc202cs_reginfo_t init_reglist_640x480[] = {
+static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x0103, 0x01}, {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80}, {0x36e9, 0x24},
     {0x301f, 0x01}, {0x3301, 0xff},
