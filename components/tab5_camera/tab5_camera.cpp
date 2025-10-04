@@ -301,78 +301,6 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x3221, 0x00},  // Binning sans flip/mirror
     {SC202CS_REG_END, 0x00},
 };
-// Configuration QVGA 320x240 RAW8
-static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
-    {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
-    {0x36e9, 0x80},          {0x36ea, 0x06},
-    {0x36eb, 0x0a},          {0x36ec, 0x01},
-    {0x36ed, 0x18},          {0x36e9, 0x24},
-    {0x301f, 0x18},          {0x3031, 0x08},
-    {0x3037, 0x00},          {0x3301, 0xff},
-    {0x3304, 0x68},          {0x3306, 0x40},
-    {0x3308, 0x08},          {0x3309, 0xa8},
-    {0x330b, 0xd0},          {0x330c, 0x18},
-    {0x330d, 0xff},          {0x330e, 0x20},
-    {0x331e, 0x59},          {0x331f, 0x99},
-    {0x3333, 0x10},          {0x335e, 0x06},
-    {0x335f, 0x08},          {0x3364, 0x1f},
-    {0x337c, 0x02},          {0x337d, 0x0a},
-    {0x338f, 0xa0},          {0x3390, 0x01},
-    {0x3391, 0x03},          {0x3392, 0x1f},
-    {0x3393, 0xff},          {0x3394, 0xff},
-    {0x3395, 0xff},          {0x33a2, 0x04},
-    {0x33ad, 0x0c},          {0x33b1, 0x20},
-    {0x33b3, 0x38},          {0x33f9, 0x40},
-    {0x33fb, 0x48},          {0x33fc, 0x0f},
-    {0x33fd, 0x1f},          {0x349f, 0x03},
-    {0x34a6, 0x03},          {0x34a7, 0x1f},
-    {0x34a8, 0x38},          {0x34a9, 0x30},
-    {0x34ab, 0xd0},          {0x34ad, 0xd8},
-    {0x34f8, 0x1f},          {0x34f9, 0x20},
-    {0x3630, 0xa0},          {0x3631, 0x92},
-    {0x3632, 0x64},          {0x3633, 0x43},
-    {0x3637, 0x49},          {0x363a, 0x85},
-    {0x363c, 0x0f},          {0x3650, 0x31},
-    {0x3670, 0x0d},          {0x3674, 0xc0},
-    {0x3675, 0xa0},          {0x3676, 0xa0},
-    {0x3677, 0x92},          {0x3678, 0x96},
-    {0x3679, 0x9a},          {0x367c, 0x03},
-    {0x367d, 0x0f},          {0x367e, 0x01},
-    {0x367f, 0x0f},          {0x3698, 0x83},
-    {0x3699, 0x86},          {0x369a, 0x8c},
-    {0x369b, 0x94},          {0x36a2, 0x01},
-    {0x36a3, 0x03},          {0x36a4, 0x07},
-    {0x36ae, 0x0f},          {0x36af, 0x1f},
-    {0x36bd, 0x22},          {0x36be, 0x22},
-    {0x36bf, 0x22},          {0x36d0, 0x01},
-    {0x370f, 0x02},          {0x3721, 0x6c},
-    {0x3722, 0x8d},          {0x3725, 0xc5},
-    {0x3727, 0x14},          {0x3728, 0x04},
-    {0x37b7, 0x04},          {0x37b8, 0x04},
-    {0x37b9, 0x06},          {0x37bd, 0x07},
-    {0x37be, 0x0f},          {0x3901, 0x02},
-    {0x3903, 0x40},          {0x3905, 0x8d},
-    {0x3907, 0x00},          {0x3908, 0x41},
-    {0x391f, 0x41},          {0x3933, 0x80},
-    {0x3934, 0x02},          {0x3937, 0x6f},
-    {0x393a, 0x01},          {0x393d, 0x01},
-    {0x393e, 0xc0},          {0x39dd, 0x41},
-    {0x3e00, 0x00},          {0x3e01, 0x4d},
-    {0x3e02, 0xc0},          {0x3e09, 0x00},
-    {0x4509, 0x28},          {0x450d, 0x61},
-    // Windowing pour 320x240 centré depuis 1280x720
-    // Start X = (1280-320)/2 = 480 = 0x1E0
-    // Start Y = (720-240)/2 = 240 = 0xF0
-    {0x3200, 0x01},          {0x3201, 0xe0},  // Start X H/L = 0x01E0
-    {0x3202, 0x00},          {0x3203, 0xf0},  // Start Y H/L = 0x00F0
-    {0x3204, 0x05},          {0x3205, 0xdf},  // End X = 480+320-1 = 799 = 0x031F -> + start = 0x05DF
-    {0x3206, 0x01},          {0x3207, 0xef},  // End Y = 240+240-1 = 479 = 0x01EF
-    {0x3208, 0x01},          {0x3209, 0x40},  // Width = 320 = 0x0140
-    {0x320a, 0x00},          {0x320b, 0xf0},  // Height = 240 = 0x00F0
-    {0x3210, 0x00},          {0x3211, 0x00},  // X offset = 0
-    {0x3212, 0x00},          {0x3213, 0x00},  // Y offset = 0
-    {SC202CS_REG_END, 0x00},
-};
 
 } // extern "C"
 
@@ -565,39 +493,37 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
     return ret;
 }
 
-// CORRECTION: Support multi-résolution avec délai de stabilisation
 static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
+    // Si format est NULL, utiliser la config par défaut depuis dev->priv
     const sc202cs_reginfo_t *reg_list = NULL;
     
     if (format != NULL) {
+        // Format spécifié explicitement
         const esp_cam_sensor_format_t *fmt = (const esp_cam_sensor_format_t *)format;
         reg_list = (const sc202cs_reginfo_t *)fmt->regs;
     } else if (dev->priv != NULL) {
+        // Utiliser la résolution stockée dans priv
         uint32_t resolution_index = *(uint32_t*)dev->priv;
         
         switch (resolution_index) {
             case 0: // VGA 640x480
                 reg_list = init_reglist_640x480_30fps;
-                ESP_LOGI(SC202CS_TAG, "Config: VGA 640x480@30fps RAW8");
+                ESP_LOGI(SC202CS_TAG, "Config: VGA 640x480@30fps");
                 break;
             case 1: // 720P 1280x720
                 reg_list = init_reglist_1280x720_30fps;
-                ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps RAW8");
+                ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps");
                 break;
-            case 2: // 1080P (utilise 720P pour l'instant)
-                reg_list = init_reglist_1280x720_30fps;
-                ESP_LOGW(SC202CS_TAG, "1080P non disponible, utilisation 720P");
-                break;
-            case 3: // QVGA 320x240
-                reg_list = init_reglist_320x240_30fps;
-                ESP_LOGI(SC202CS_TAG, "Config: QVGA 320x240@30fps RAW8");
-                break;
+            case 2: // 1080P (si disponible)
+            case 3: // QVGA (si disponible)
             default:
+                // Par défaut, utiliser 720P
                 reg_list = init_reglist_1280x720_30fps;
-                ESP_LOGE(SC202CS_TAG, "Résolution invalide (%u), utilisation 720P", resolution_index);
+                ESP_LOGE(SC202CS_TAG, "Résolution non supportée, utilisation 720P");
                 break;
         }
     } else {
+        // Fallback absolu
         reg_list = init_reglist_1280x720_30fps;
         ESP_LOGW(SC202CS_TAG, "Format par défaut: 720P");
     }
@@ -613,9 +539,6 @@ static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *fo
         ESP_LOGE(SC202CS_TAG, "Set format failed: %d", ret);
         return ret;
     }
-    
-    // IMPORTANT: Délai pour stabilisation du capteur après changement de résolution
-    delay_ms(50);
     
     ESP_LOGI(SC202CS_TAG, "✓ Format configuré");
     return ESP_OK;
