@@ -831,7 +831,7 @@ bool Tab5Camera::init_isp_() {
   // CONFIGURATION BF (Bilateral Filter) - Pour réduire le bruit
   // ============================================================================
   esp_isp_bf_config_t bf_config = {};
-  bf_config.denoising_level = 8;
+  bf_config.denoising_level = 5;  // Réduit à 5 pour éviter trop de lissage
   bf_config.padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA;
   bf_config.padding_data = 0;
   bf_config.padding_line_tail_valid_start_pixel = 0;
@@ -849,36 +849,14 @@ bool Tab5Camera::init_isp_() {
     }
   }
   
-  // ============================================================================
-  // CONFIGURATION CCM (Color Correction Matrix) - Pour corriger les couleurs
-  // ============================================================================
-  esp_isp_ccm_config_t ccm_config = {};
-  // Matrice pour réduire le vert et améliorer la luminosité
-  float ccm_matrix[ISP_CCM_DIMENSION][ISP_CCM_DIMENSION] = {
-    {1.3f,  -0.15f, -0.15f},  // Rouge: renforcé
-    {-0.15f,  0.9f, -0.15f},  // Vert: réduit (pour enlever la teinte verte)
-    {-0.15f, -0.15f,  1.3f}   // Bleu: renforcé
-  };
-  memcpy(ccm_config.matrix, ccm_matrix, sizeof(ccm_matrix));
-  ccm_config.saturation = true;
-  
-  ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
-  if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "CCM configure failed: %d", ret);
-  } else {
-    ret = esp_isp_ccm_enable(this->isp_handle_);
-    if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ CCM (correction couleur) activé");
-    } else {
-      ESP_LOGW(TAG, "CCM enable failed: %d", ret);
-    }
-  }
+  // NOTE: CCM désactivé temporairement pour debug des couleurs
+  // Si l'image est correcte sans CCM, nous pourrons régler la matrice progressivement
   
   // ============================================================================
   // CONFIGURATION SHARPEN - Pour améliorer la netteté
   // ============================================================================
   esp_isp_sharpen_config_t sharpen_config = {};
-  sharpen_config.h_thresh = 255;
+  sharpen_config.h_thresh = 200;  // Réduit à 200 pour moins d'artefacts
   
   ret = esp_isp_sharpen_configure(this->isp_handle_, &sharpen_config);
   if (ret != ESP_OK) {
@@ -899,7 +877,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✅ ISP configuré (BF + CCM + Sharpen)");
+  ESP_LOGI(TAG, "✅ ISP configuré (BF + Sharpen, CCM désactivé pour debug)");
   return true;
 }
 
