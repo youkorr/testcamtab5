@@ -820,8 +820,6 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_start_packet = false;
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = 80000000;
-  // IMPORTANT: Définir le bon Bayer pattern pour SC202CS
-  isp_config.bayer_type = ISP_BAYER_BGGR;  // SC202CS utilise BGGR
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
@@ -829,7 +827,19 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✓ ISP créé avec Bayer pattern BGGR");
+  // ============================================================================
+  // CONFIGURATION BAYER PATTERN - CRITIQUE pour les bonnes couleurs
+  // ============================================================================
+  esp_isp_bayer_config_t bayer_config = {};
+  bayer_config.bayer_type = ISP_BAYER_BGGR;  // SC202CS utilise BGGR
+  
+  ret = esp_isp_bayer_configure(this->isp_handle_, &bayer_config);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Bayer configure failed: %d", ret);
+    // C'est critique, mais on continue quand même
+  } else {
+    ESP_LOGI(TAG, "✓ Bayer pattern configuré: BGGR");
+  }
   
   // ============================================================================
   // CONFIGURATION BF (Bilateral Filter) - Pour réduire le bruit
