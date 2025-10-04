@@ -447,7 +447,7 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
 
 static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
     // Écrire la configuration 640x480
-    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)init_reglist_1280x720_30fps);
+    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)init_reglist_640x480_30fps);
     if (ret != ESP_OK) {
         ESP_LOGE(SC202CS_TAG, "Set format failed");
         return ret;
