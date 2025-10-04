@@ -854,21 +854,8 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  // *** CORRECTION COULEUR : Configurer le Bayer pattern ***
-  // SC202CS utilise BGGR (Blue-Green-Green-Red)
-  isp_bayer_stats_config_t bayer_config = {
-    .bayer_pattern = ISP_BAYER_BGGR,
-  };
-  
-  ret = esp_isp_configure_bayer_stats(this->isp_handle_, &bayer_config);
-  if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "Bayer config failed: %d (continuons)", ret);
-  } else {
-    ESP_LOGI(TAG, "✓ Bayer pattern: BGGR");
-  }
-  
   // *** AWB (Auto White Balance) pour corriger la teinte verte ***
-  isp_awb_config_t awb_config = {};
+  esp_isp_awb_config_t awb_config = {};
   awb_config.sample_point = ISP_AWB_SAMPLE_POINT_AFTER_CCM;
   
   ret = esp_isp_awb_configure(this->isp_handle_, &awb_config);
@@ -886,7 +873,7 @@ bool Tab5Camera::init_isp_() {
   }
   
   // *** AE (Auto Exposure) pour corriger la luminosité ***
-  isp_ae_config_t ae_config = {};
+  esp_isp_ae_config_t ae_config = {};
   ae_config.sample_point = ISP_AE_SAMPLE_POINT_AFTER_DEMOSAIC;
   
   ret = esp_isp_ae_configure(this->isp_handle_, &ae_config);
@@ -904,8 +891,8 @@ bool Tab5Camera::init_isp_() {
   }
   
   // *** Color Correction Matrix pour ajuster les couleurs ***
-  isp_ccm_config_t ccm_config = {};
-  ccm_config.saturation = ISP_CCM_SATURATION_DEFAULT;
+  esp_isp_ccm_config_t ccm_config = {};
+  // Utiliser la matrice par défaut
   
   ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
   if (ret != ESP_OK) {
@@ -922,8 +909,8 @@ bool Tab5Camera::init_isp_() {
   }
   
   // *** Gamma correction pour la luminosité ***
-  isp_gamma_config_t gamma_config = {};
-  gamma_config.gamma_coeff = ISP_GAMMA_CURVE_DEFAULT;
+  esp_isp_gamma_config_t gamma_config = {};
+  // Courbe gamma par défaut (pas de constante DEFAULT disponible)
   
   ret = esp_isp_gamma_configure(this->isp_handle_, &gamma_config);
   if (ret != ESP_OK) {
@@ -940,9 +927,13 @@ bool Tab5Camera::init_isp_() {
   }
   
   // *** BF (Bilateral Filter) pour réduire le bruit ***
-  isp_bf_config_t bf_config = {};
+  esp_isp_bf_config_t bf_config = {};
   bf_config.denoising_level = 5;  // Niveau moyen de débruitage
-  bf_config.padding_mode = ISP_BF_EDGE_PADDING_MODE_SRPM;
+  bf_config.padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA;
+  bf_config.padding_data = 0;
+  bf_config.padding_line_tail_valid_start_pixel = 0;
+  bf_config.padding_line_tail_valid_end_pixel = 0;
+  bf_config.bf_template = NULL;  // Template par défaut
   
   ret = esp_isp_bf_configure(this->isp_handle_, &bf_config);
   if (ret != ESP_OK) {
@@ -965,7 +956,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✅ ISP complet (Bayer+AWB+AE+CCM+Gamma+BF)");
+  ESP_LOGI(TAG, "✅ ISP complet (AWB+AE+CCM+Gamma+BF)");
   return true;
 }
 
