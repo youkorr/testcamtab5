@@ -845,7 +845,7 @@ bool Tab5Camera::init_isp_() {
   isp_config.v_res = res.height;
   isp_config.has_line_start_packet = false;
   isp_config.has_line_end_packet = false;
-  isp_config.clk_hz = 80000000;
+  isp_config.clk_hz = 576000000;
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
