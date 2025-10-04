@@ -830,7 +830,31 @@ bool Tab5Camera::init_csi_() {
   ESP_LOGI(TAG, "✓ CSI OK (%ux%u)", res.width, res.height);
   return true;
 }
+void Tab5Camera::set_ccm_red_gain(float value) {
+  // Exemple : stocker la valeur localement ou l'envoyer au capteur
+  this->ccm_red_gain_ = value;
+  ESP_LOGI("tab5_camera", "CCM Red Gain set to: %.2f", value);
+}
 
+void Tab5Camera::set_ccm_green_gain(float value) {
+  this->ccm_green_gain_ = value;
+  ESP_LOGI("tab5_camera", "CCM Green Gain set to: %.2f", value);
+}
+
+void Tab5Camera::set_ccm_blue_gain(float value) {
+  this->ccm_blue_gain_ = value;
+  ESP_LOGI("tab5_camera", "CCM Blue Gain set to: %.2f", value);
+}
+
+void Tab5Camera::set_sensor_gain(uint32_t value) {
+  this->sensor_gain_ = value;
+  ESP_LOGI("tab5_camera", "Sensor Gain set to: %lu", (unsigned long)value);
+}
+
+void Tab5Camera::set_sensor_exposure(uint32_t value) {
+  this->sensor_exposure_ = value;
+  ESP_LOGI("tab5_camera", "Sensor Exposure set to: %lu", (unsigned long)value);
+}
 bool Tab5Camera::init_isp_() {
   ESP_LOGI(TAG, "Init ISP avec config couleur simplifiée");
   
