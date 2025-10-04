@@ -90,6 +90,8 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
 
   bool flip_mirror_{false};
 
+  void apply_manual_white_balance_();
+
   
   bool initialized_{false};
   bool streaming_{false};
