@@ -94,6 +94,12 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   uint8_t framerate_{30};
 
   bool flip_mirror_{false};
+
+  float ccm_red_gain_{0};
+  float ccm_green_gain_{0};
+  float ccm_blue_gain_{0};
+  uint32_t sensor_gain_{0};
+  uint32_t sensor_exposure_{0};
   
   bool initialized_{false};
   bool streaming_{false};
