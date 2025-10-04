@@ -889,23 +889,6 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
-  // NOUVEAU: Augmenter l'exposition pour plus de luminosité
-  // Exposition = 0x04dc (1244 lignes) au lieu de 0x04dc par défaut
-  uint16_t exposure = 0x0800;  // Augmenter l'exposition
-  sc202cs_write(sccb_handle, 0x3e00, (exposure >> 12) & 0x0F);  // Expo H
-  sc202cs_write(sccb_handle, 0x3e01, (exposure >> 4) & 0xFF);   // Expo M
-  sc202cs_write(sccb_handle, 0x3e02, (exposure & 0x0F) << 4);   // Expo L
-  ESP_LOGI(TAG, "✓ Exposition augmentée: 0x%04X", exposure);
-  
-  // NOUVEAU: Augmenter le gain analogique pour plus de luminosité
-  // Gain analogique: 0x00 = 1x, 0x01 = 2x, 0x03 = 4x, 0x07 = 8x
-  sc202cs_write(sccb_handle, 0x3e09, 0x03);  // Again = 4x
-  ESP_LOGI(TAG, "✓ Gain analogique: 4x");
-  
-  // NOUVEAU: Activer AEC/AGC (Auto Exposure/Gain Control)
-  sc202cs_write(sccb_handle, 0x3e03, 0x0b);  // AEC/AGC enable
-  ESP_LOGI(TAG, "✓ AEC/AGC activé");
-  
   // NOUVEAU: Appliquer flip/mirror si configuré
   if (this->flip_mirror_) {
     int enable = 1;
