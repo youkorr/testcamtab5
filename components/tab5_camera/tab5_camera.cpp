@@ -304,7 +304,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {SC202CS_REG_END, 0x00},
 };
 
-// Configuration QVGA 320x240 RAW8 - CORRIGÉE
+// Configuration QVGA 320x240 RAW8 - Version finale corrigée
 static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
@@ -363,7 +363,6 @@ static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x3e00, 0x00},          {0x3e01, 0x4d},
     {0x3e02, 0xc0},          {0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
-    // Windowing pour 320x240
     {0x3200, 0x01},          {0x3201, 0xe0},
     {0x3202, 0x00},          {0x3203, 0xf0},
     {0x3204, 0x05},          {0x3205, 0xdf},
@@ -376,7 +375,9 @@ static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x320e, 0x04},          {0x320f, 0xe2},
     {0x3221, 0x44},
     {SC202CS_REG_END, 0x00},
-};49f, 0x03},
+};
+
+} // extern "C"49f, 0x03},
     {0x34a6, 0x03},          {0x34a7, 0x1f},
     {0x34a8, 0x38},          {0x34a9, 0x30},
     {0x34ab, 0xd0},          {0x34ad, 0xd8},
@@ -1081,38 +1082,22 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ BF (denoising) activé");
   }
   
-  // 2. Configuration Color
+  // 2. Configuration Color - Simplifiée pour ESP-IDF 5.4
   esp_isp_color_config_t color_config = {
     .color_contrast = {
-      .matrix = {
-        420, -140, -24,
-        -96, 448, -96,
-        -24, -140, 420
-      },
+      .coefficients = {420, -140, -24, -96, 448, -96, -24, -140, 420},
       .offset = {0, 0, 0}
     },
     .color_saturation = {
-      .matrix = {
-        384, 0, 0,
-        0, 384, 0,
-        0, 0, 384
-      },
+      .coefficients = {384, 0, 0, 0, 384, 0, 0, 0, 384},
       .offset = {0, 0, 0}
     },
     .color_hue = {
-      .matrix = {
-        256, 0, 0,
-        0, 256, 0,
-        0, 0, 256
-      },
+      .coefficients = {256, 0, 0, 0, 256, 0, 0, 0, 256},
       .offset = {0, 0, 0}
     },
     .color_brightness = {
-      .matrix = {
-        256, 0, 0,
-        0, 256, 0,
-        0, 0, 256
-      },
+      .coefficients = {256, 0, 0, 0, 256, 0, 0, 0, 256},
       .offset = {32, 32, 32}
     }
   };
@@ -1125,14 +1110,17 @@ bool Tab5Camera::init_isp_() {
   }
   
   // 3. Configuration CCM (Color Correction Matrix)
-  esp_isp_ccm_config_t ccm_config = {
-    .matrix = {
-      {0x0140, 0xFF80, 0xFF40},
-      {0xFFC0, 0x0180, 0xFFC0},
-      {0xFFC0, 0xFF80, 0x0140},
-    },
-    .saturation = ISP_CCM_SATURATION_100
-  };
+  esp_isp_ccm_config_t ccm_config = {};
+  ccm_config.matrix[0][0] = 0x0140;  // R
+  ccm_config.matrix[0][1] = 0xFF80;
+  ccm_config.matrix[0][2] = 0xFF40;
+  ccm_config.matrix[1][0] = 0xFFC0;  // G
+  ccm_config.matrix[1][1] = 0x0180;
+  ccm_config.matrix[1][2] = 0xFFC0;
+  ccm_config.matrix[2][0] = 0xFFC0;  // B
+  ccm_config.matrix[2][1] = 0xFF80;
+  ccm_config.matrix[2][2] = 0x0140;
+  
   ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
   if (ret != ESP_OK) {
     ESP_LOGW(TAG, "CCM config failed: %d", ret);
@@ -1141,20 +1129,21 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ CCM (correction couleur) activée");
   }
   
-  // 4. Configuration Gamma - CORRIGÉE pour ESP-IDF 5.4
+  // 4. Configuration Gamma - Corrigée pour ESP-IDF 5.4
   isp_gamma_curve_points_t gamma_pts = {};
   for (int i = 0; i < ISP_GAMMA_CURVE_POINTS_NUM; i++) {
     gamma_pts.pt[i].x = i;
     gamma_pts.pt[i].y = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);
   }
-  // ESP-IDF 5.4 nécessite 3 paramètres (RGB séparément)
-  ret = esp_isp_gamma_configure(this->isp_handle_, ISP_COLOR_COMPONENT_R, &gamma_pts);
-  ret |= esp_isp_gamma_configure(this->isp_handle_, ISP_COLOR_COMPONENT_G, &gamma_pts);
-  ret |= esp_isp_gamma_configure(this->isp_handle_, ISP_COLOR_COMPONENT_B, &gamma_pts);
+  
+  // Utiliser COLOR_COMPONENT au lieu de ISP_COLOR_COMPONENT
+  ret = esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_R, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_G, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_B, &gamma_pts);
   if (ret != ESP_OK) {
     ESP_LOGW(TAG, "Gamma config failed: %d", ret);
   } else {
-    ret = esp_isp_gamma_enable(this->isp_handle_, ISP_COLOR_COMPONENT_ALL);
+    ret = esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_ALL);
     ESP_LOGI(TAG, "✓ Gamma correction activée");
   }
   
