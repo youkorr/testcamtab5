@@ -820,6 +820,8 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_start_packet = false;
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = 80000000;
+  // IMPORTANT: Définir le bon Bayer pattern pour SC202CS
+  isp_config.bayer_type = ISP_BAYER_BGGR;  // SC202CS utilise BGGR
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
@@ -827,11 +829,13 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
+  ESP_LOGI(TAG, "✓ ISP créé avec Bayer pattern BGGR");
+  
   // ============================================================================
   // CONFIGURATION BF (Bilateral Filter) - Pour réduire le bruit
   // ============================================================================
   esp_isp_bf_config_t bf_config = {};
-  bf_config.denoising_level = 5;  // Réduit à 5 pour éviter trop de lissage
+  bf_config.denoising_level = 5;
   bf_config.padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA;
   bf_config.padding_data = 0;
   bf_config.padding_line_tail_valid_start_pixel = 0;
@@ -849,14 +853,35 @@ bool Tab5Camera::init_isp_() {
     }
   }
   
-  // NOTE: CCM désactivé temporairement pour debug des couleurs
-  // Si l'image est correcte sans CCM, nous pourrons régler la matrice progressivement
+  // ============================================================================
+  // CONFIGURATION CCM (Color Correction Matrix) - Matrice identité de base
+  // ============================================================================
+  esp_isp_ccm_config_t ccm_config = {};
+  float ccm_matrix[ISP_CCM_DIMENSION][ISP_CCM_DIMENSION] = {
+    {1.0f,  0.0f,  0.0f},   // Rouge
+    {0.0f,  1.0f,  0.0f},   // Vert
+    {0.0f,  0.0f,  1.0f}    // Bleu
+  };
+  memcpy(ccm_config.matrix, ccm_matrix, sizeof(ccm_matrix));
+  ccm_config.saturation = false;
+  
+  ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "CCM configure failed: %d", ret);
+  } else {
+    ret = esp_isp_ccm_enable(this->isp_handle_);
+    if (ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ CCM activé (matrice identité)");
+    } else {
+      ESP_LOGW(TAG, "CCM enable failed: %d", ret);
+    }
+  }
   
   // ============================================================================
   // CONFIGURATION SHARPEN - Pour améliorer la netteté
   // ============================================================================
   esp_isp_sharpen_config_t sharpen_config = {};
-  sharpen_config.h_thresh = 200;  // Réduit à 200 pour moins d'artefacts
+  sharpen_config.h_thresh = 200;
   
   ret = esp_isp_sharpen_configure(this->isp_handle_, &sharpen_config);
   if (ret != ESP_OK) {
@@ -864,7 +889,7 @@ bool Tab5Camera::init_isp_() {
   } else {
     ret = esp_isp_sharpen_enable(this->isp_handle_);
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ Sharpen (netteté) activé");
+      ESP_LOGI(TAG, "✓ Sharpen activé");
     } else {
       ESP_LOGW(TAG, "Sharpen enable failed: %d", ret);
     }
@@ -877,7 +902,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✅ ISP configuré (BF + Sharpen, CCM désactivé pour debug)");
+  ESP_LOGI(TAG, "✅ ISP configuré avec Bayer BGGR");
   return true;
 }
 
