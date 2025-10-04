@@ -226,7 +226,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {SC202CS_REG_END, 0x00},
 };
 
-// Configuration 640x480 RAW8 - CORRIGÉE basée sur 1280x720
+// Configuration 640x480 RAW8 - CORRIGÉE avec binning au lieu de windowing
 static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
@@ -285,17 +285,20 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x3e00, 0x00},          {0x3e01, 0x4d},
     {0x3e02, 0xc0},          {0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
-    // Windowing pour 640x480 centré depuis 1280x720
-    // Start X = (1280-640)/2 = 320 = 0x140
-    // Start Y = (720-480)/2 = 120 = 0x78
-    {0x3200, 0x01},          {0x3201, 0x40},  // Start X H/L = 0x0140
-    {0x3202, 0x00},          {0x3203, 0x78},  // Start Y H/L = 0x0078
-    {0x3204, 0x06},          {0x3205, 0x3f},  // End X = 320+640-1 = 959 = 0x03BF -> + start = 0x063F
-    {0x3206, 0x02},          {0x3207, 0x57},  // End Y = 120+480-1 = 599 = 0x0257
-    {0x3208, 0x02},          {0x3209, 0x80},  // Width = 640 = 0x0280
-    {0x320a, 0x01},          {0x320b, 0xe0},  // Height = 480 = 0x01E0
-    {0x3210, 0x00},          {0x3211, 0x00},  // X offset = 0
-    {0x3212, 0x00},          {0x3213, 0x00},  // Y offset = 0
+    // Configuration directe sans windowing - résolution native
+    {0x3200, 0x00},          {0x3201, 0x00},  // Start X = 0
+    {0x3202, 0x00},          {0x3203, 0x00},  // Start Y = 0  
+    {0x3204, 0x05},          {0x3205, 0x07},  // End X = 1287
+    {0x3206, 0x02},          {0x3207, 0xd7},  // End Y = 727
+    {0x3208, 0x02},          {0x3209, 0x80},  // Width = 640
+    {0x320a, 0x01},          {0x320b, 0xe0},  // Height = 480
+    {0x3210, 0x00},          {0x3211, 0x04},  // X offset = 4
+    {0x3212, 0x00},          {0x3213, 0x02},  // Y offset = 2
+    // VTS/HTS pour 30fps
+    {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
+    {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
+    // Activer le binning 2x2
+    {0x3221, 0x66},  // Binning horizontal + vertical
     {SC202CS_REG_END, 0x00},
 };
 
@@ -563,7 +566,7 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
     return ret;
 }
 
-// CORRECTION: Support multi-résolution
+// CORRECTION: Support multi-résolution avec délai de stabilisation
 static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
     const sc202cs_reginfo_t *reg_list = NULL;
     
@@ -611,6 +614,9 @@ static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *fo
         ESP_LOGE(SC202CS_TAG, "Set format failed: %d", ret);
         return ret;
     }
+    
+    // IMPORTANT: Délai pour stabilisation du capteur après changement de résolution
+    delay_ms(50);
     
     ESP_LOGI(SC202CS_TAG, "✓ Format configuré");
     return ESP_OK;
@@ -1003,6 +1009,10 @@ bool Tab5Camera::start_streaming() {
   
   ESP_LOGI(TAG, "Démarrage streaming");
   
+  // IMPORTANT: Vérifier la résolution configurée
+  CameraResolutionInfo res = this->get_resolution_info_();
+  ESP_LOGI(TAG, "Résolution active: %ux%u", res.width, res.height);
+  
   // Démarrer le capteur
   if (this->sensor_device_) {
     int enable = 1;
@@ -1015,6 +1025,9 @@ bool Tab5Camera::start_streaming() {
       ESP_LOGE(TAG, "Failed to start sensor: %d", ret);
       return false;
     }
+    
+    // Délai pour que le capteur démarre complètement
+    delay(100);
   }
   
   // Démarrer CSI
@@ -1025,7 +1038,7 @@ bool Tab5Camera::start_streaming() {
   }
   
   this->streaming_ = true;
-  ESP_LOGI(TAG, "✅ Streaming actif");
+  ESP_LOGI(TAG, "✅ Streaming actif (%ux%u)", res.width, res.height);
   return true;
 }
 
