@@ -848,6 +848,12 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = 80000000;
   
+  // *** IMPORTANT: Définir le Bayer pattern BGGR depuis SC202CS ***
+  // L'ordre des couleurs dans la matrice Bayer affecte directement le rendu des couleurs
+  isp_config.bayer_type = ISP_BAYER_BGGR;  // SC202CS utilise BGGR
+  
+  ESP_LOGI(TAG, "ISP Bayer pattern: BGGR (Blue-Green-Green-Red)");
+  
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "ISP create failed: %d", ret);
@@ -959,7 +965,6 @@ bool Tab5Camera::init_isp_() {
   ESP_LOGI(TAG, "✅ ISP complet (AWB+AE+CCM+Gamma+BF)");
   return true;
 }
-
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
   this->frame_buffer_size_ = res.width * res.height * 2;
