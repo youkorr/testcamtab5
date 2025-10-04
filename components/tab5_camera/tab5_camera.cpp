@@ -832,10 +832,11 @@ bool Tab5Camera::init_csi_() {
 }
 
 bool Tab5Camera::init_isp_() {
-  ESP_LOGI(TAG, "Init ISP");
+  ESP_LOGI(TAG, "Init ISP avec config couleur");
   
   CameraResolutionInfo res = this->get_resolution_info_();
   
+  // Configuration ISP de base
   esp_isp_processor_cfg_t isp_config = {};
   isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
   isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
@@ -853,13 +854,118 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
+  // *** CORRECTION COULEUR : Configurer le Bayer pattern ***
+  // SC202CS utilise BGGR (Blue-Green-Green-Red)
+  isp_bayer_stats_config_t bayer_config = {
+    .bayer_pattern = ISP_BAYER_BGGR,
+  };
+  
+  ret = esp_isp_configure_bayer_stats(this->isp_handle_, &bayer_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "Bayer config failed: %d (continuons)", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ Bayer pattern: BGGR");
+  }
+  
+  // *** AWB (Auto White Balance) pour corriger la teinte verte ***
+  isp_awb_config_t awb_config = {};
+  awb_config.sample_point = ISP_AWB_SAMPLE_POINT_AFTER_CCM;
+  
+  ret = esp_isp_awb_configure(this->isp_handle_, &awb_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "AWB config failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ AWB configuré");
+  }
+  
+  ret = esp_isp_awb_enable(this->isp_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "AWB enable failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ AWB activé");
+  }
+  
+  // *** AE (Auto Exposure) pour corriger la luminosité ***
+  isp_ae_config_t ae_config = {};
+  ae_config.sample_point = ISP_AE_SAMPLE_POINT_AFTER_DEMOSAIC;
+  
+  ret = esp_isp_ae_configure(this->isp_handle_, &ae_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "AE config failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ AE configuré");
+  }
+  
+  ret = esp_isp_ae_enable(this->isp_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "AE enable failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ AE activé");
+  }
+  
+  // *** Color Correction Matrix pour ajuster les couleurs ***
+  isp_ccm_config_t ccm_config = {};
+  ccm_config.saturation = ISP_CCM_SATURATION_DEFAULT;
+  
+  ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "CCM config failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ CCM configuré");
+  }
+  
+  ret = esp_isp_ccm_enable(this->isp_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "CCM enable failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ CCM activé");
+  }
+  
+  // *** Gamma correction pour la luminosité ***
+  isp_gamma_config_t gamma_config = {};
+  gamma_config.gamma_coeff = ISP_GAMMA_CURVE_DEFAULT;
+  
+  ret = esp_isp_gamma_configure(this->isp_handle_, &gamma_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "Gamma config failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ Gamma configuré");
+  }
+  
+  ret = esp_isp_gamma_enable(this->isp_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "Gamma enable failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ Gamma activé");
+  }
+  
+  // *** BF (Bilateral Filter) pour réduire le bruit ***
+  isp_bf_config_t bf_config = {};
+  bf_config.denoising_level = 5;  // Niveau moyen de débruitage
+  bf_config.padding_mode = ISP_BF_EDGE_PADDING_MODE_SRPM;
+  
+  ret = esp_isp_bf_configure(this->isp_handle_, &bf_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "BF config failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ Bilateral Filter configuré");
+  }
+  
+  ret = esp_isp_bf_enable(this->isp_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "BF enable failed: %d", ret);
+  } else {
+    ESP_LOGI(TAG, "✓ BF activé");
+  }
+  
+  // Activer l'ISP
   ret = esp_isp_enable(this->isp_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "ISP enable failed: %d", ret);
     return false;
   }
   
-  ESP_LOGI(TAG, "✓ ISP OK");
+  ESP_LOGI(TAG, "✅ ISP complet (Bayer+AWB+AE+CCM+Gamma+BF)");
   return true;
 }
 
