@@ -832,10 +832,18 @@ bool Tab5Camera::init_csi_() {
 }
 
 bool Tab5Camera::init_isp_() {
-  ESP_LOGI(TAG, "Init ISP");
+  ESP_LOGI(TAG, "Initialisation ISP");
   
+  // Obtenir les informations de résolution
   CameraResolutionInfo res = this->get_resolution_info_();
   
+  // Ajuster la fréquence ISP selon la résolution
+  uint32_t isp_clock_hz = 80000000;  // 80 MHz par défaut
+  if (this->resolution_ == RESOLUTION_720P) {
+    isp_clock_hz = 120000000;  // 120 MHz pour 720P
+  }
+  
+  // Configuration ISP
   esp_isp_processor_cfg_t isp_config = {};
   isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
   isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
@@ -845,24 +853,99 @@ bool Tab5Camera::init_isp_() {
   isp_config.v_res = res.height;
   isp_config.has_line_start_packet = false;
   isp_config.has_line_end_packet = false;
-  isp_config.clk_hz = 80000000;
+  isp_config.clk_hz = isp_clock_hz;
   
+  // Configuration du pattern Bayer - TESTEZ CES VALEURS :
+  // 0 = RGGB, 1 = GRBG, 2 = GBRG, 3 = BGGR
+  int bayer_pattern = 0;  // Commencez avec RGGB (0)
+  
+  isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
+  
+  const char* bayer_names[] = {"RGGB", "GRBG", "GBRG", "BGGR"};
+  ESP_LOGI(TAG, "Pattern Bayer: %s (%d)", bayer_names[bayer_pattern], bayer_pattern);
+  
+  // Créer le processeur ISP
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "ISP create failed: %d", ret);
+    ESP_LOGE(TAG, "Échec création ISP: 0x%x", ret);
     return false;
   }
   
+  // Activer l'ISP
   ret = esp_isp_enable(this->isp_handle_);
   if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "ISP enable failed: %d", ret);
+    ESP_LOGE(TAG, "Échec activation ISP: 0x%x", ret);
+    esp_isp_del_processor(this->isp_handle_);
+    this->isp_handle_ = nullptr;
     return false;
   }
   
-  ESP_LOGI(TAG, "✓ ISP OK");
+  ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)", 
+           isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
+  
+  // Configurer les corrections couleur
+  this->configure_isp_color_correction_();
+  
   return true;
 }
 
+void Tab5Camera::configure_isp_color_correction_() {
+  ESP_LOGI(TAG, "Configuration corrections couleur");
+  
+  // Corrections couleur de base si supportées
+#ifdef CONFIG_ISP_COLOR_ENABLED
+  esp_isp_color_config_t color_config = {};
+  color_config.color_contrast = {128, 128, 128};
+  color_config.color_saturation = {128, 128, 128};
+  color_config.color_hue = 0;
+  color_config.color_brightness = 0;
+  
+  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
+  if (ret == ESP_OK) {
+    ESP_LOGI(TAG, "✓ Corrections couleur configurées");
+  }
+#endif
+
+  // Tentative d'activation AWB
+  if (this->sensor_device_) {
+    int awb_value = 1;
+    esp_err_t ret = ESP_FAIL;
+    
+    // Commandes AWB à tester
+    const uint32_t awb_commands[] = {
+      0x009F0901,  // Standard SC202CS
+      0x009F0903,  // Alternative
+      0x03010001,  // Originale
+    };
+    
+    for (size_t i = 0; i < sizeof(awb_commands)/sizeof(awb_commands[0]); i++) {
+      ret = esp_cam_sensor_ioctl(this->sensor_device_, awb_commands[i], &awb_value);
+      if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "✓ AWB activé: 0x%08x", awb_commands[i]);
+        return;
+      }
+    }
+    
+    // AWB non supporté
+    ESP_LOGW(TAG, "AWB non supporté, balance manuelle");
+    this->apply_manual_white_balance_();
+  }
+}
+
+void Tab5Camera::apply_manual_white_balance_() {
+#ifdef CONFIG_ISP_COLOR_ENABLED
+  esp_isp_color_config_t color_config = {};
+  
+  // Réglages manuels pour compensation
+  color_config.color_contrast = {125, 125, 125};
+  color_config.color_saturation = {115, 115, 115};
+  color_config.color_hue = 0;
+  color_config.color_brightness = 8;
+  
+  esp_isp_color_configure(this->isp_handle_, &color_config);
+  ESP_LOGI(TAG, "✓ Balance manuelle appliquée");
+#endif
+}
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
   this->frame_buffer_size_ = res.width * res.height * 2;
