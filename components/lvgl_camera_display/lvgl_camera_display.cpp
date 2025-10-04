@@ -31,16 +31,6 @@ void LVGLCameraDisplay::loop() {
   
   this->last_update_ = now;
   
-  // Compteur de frames pour debug
-  static uint32_t loop_count = 0;
-  loop_count++;
-  
-  // Logger l'état toutes les 30 loops
-  if (loop_count % 30 == 0) {
-    ESP_LOGD(TAG, "📊 Loop #%u - streaming=%d, canvas=%p", 
-             loop_count, this->camera_->is_streaming(), this->canvas_obj_);
-  }
-  
   // Si la caméra est en streaming, capturer ET mettre à jour le canvas
   if (this->camera_->is_streaming()) {
     // Capturer une nouvelle frame
@@ -49,23 +39,17 @@ void LVGLCameraDisplay::loop() {
     if (frame_captured) {
       this->update_canvas_();
       
-      // Compteur de frames pour debug
-      static uint32_t frame_count = 0;
-      frame_count++;
+      // Compteur de frames pour debug RÉDUIT
+      this->frame_count_++;
       
-      // Logger toutes les 30 frames
-      if (frame_count % 30 == 0) {
-        ESP_LOGI(TAG, "✓ %u frames affichées", frame_count);
+      // Logger seulement toutes les 100 frames (environ toutes les 10s à 10 FPS)
+      if (this->frame_count_ % 100 == 0) {
+        ESP_LOGD(TAG, "✓ %u frames affichées", this->frame_count_);
       }
-    } else {
-      ESP_LOGV(TAG, "⚠️  Frame capture échouée");
     }
-  } else {
-    // Logger si pas en streaming
-    if (loop_count % 100 == 0) {
-      ESP_LOGW(TAG, "⏸️  Caméra pas en streaming");
-    }
+    // PAS de log pour les frames échouées (trop verbeux)
   }
+  // PAS de log pour "pas en streaming" (trop verbeux)
 }
 
 void LVGLCameraDisplay::dump_config() {
@@ -77,12 +61,15 @@ void LVGLCameraDisplay::dump_config() {
 
 void LVGLCameraDisplay::update_canvas_() {
   if (this->camera_ == nullptr) {
-    ESP_LOGV(TAG, "❌ Camera null");
-    return;
+    return;  // Pas de log
   }
   
   if (this->canvas_obj_ == nullptr) {
-    ESP_LOGW(TAG, "❌ Canvas null - pas encore configuré?");
+    // Logger seulement la première fois
+    if (!this->canvas_warning_shown_) {
+      ESP_LOGW(TAG, "❌ Canvas null - pas encore configuré?");
+      this->canvas_warning_shown_ = true;
+    }
     return;
   }
   
@@ -92,19 +79,17 @@ void LVGLCameraDisplay::update_canvas_() {
   uint16_t height = this->camera_->get_image_height();
   
   if (img_data == nullptr) {
-    ESP_LOGW(TAG, "❌ Image data null");
-    return;
+    return;  // Pas de log
   }
   
-  // Debug: vérifier les premières valeurs
-  static bool first_update = true;
-  if (first_update) {
+  // Debug: vérifier les premières valeurs SEULEMENT UNE FOIS
+  if (this->first_update_) {
     ESP_LOGI(TAG, "🖼️  Premier update canvas:");
     ESP_LOGI(TAG, "   Dimensions: %ux%u", width, height);
     ESP_LOGI(TAG, "   Buffer: %p", img_data);
     ESP_LOGI(TAG, "   Premiers pixels (RGB565): %02X%02X %02X%02X %02X%02X", 
              img_data[0], img_data[1], img_data[2], img_data[3], img_data[4], img_data[5]);
-    first_update = false;
+    this->first_update_ = false;
   }
   
   // Mettre à jour le buffer du canvas avec les données RGB565
@@ -113,12 +98,7 @@ void LVGLCameraDisplay::update_canvas_() {
   // Invalider le canvas pour forcer le redessinage
   lv_obj_invalidate(this->canvas_obj_);
   
-  // Logger seulement toutes les 30 frames
-  static uint32_t update_count = 0;
-  update_count++;
-  if (update_count % 30 == 0) {
-    ESP_LOGI(TAG, "✓ Canvas update #%u: %ux%u", update_count, width, height);
-  }
+  // PAS de log périodique (trop verbeux)
 }
 
 void LVGLCameraDisplay::configure_canvas(lv_obj_t *canvas) { 
