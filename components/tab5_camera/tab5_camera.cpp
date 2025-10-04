@@ -896,7 +896,7 @@ bool Tab5Camera::init_isp_() {
   // CONFIGURATION DEMOSAIC - Pour améliorer la conversion RAW vers RGB
   // ============================================================================
   esp_isp_demosaic_config_t demosaic_config = {};
-  demosaic_config.grad_ratio = 64;  // Valeur par défaut (typiquement 64 ou 128)
+  demosaic_config.grad_ratio = ISP_DEMOSAIC_GRAD_RATIO_128;
   
   ret = esp_isp_demosaic_configure(this->isp_handle_, &demosaic_config);
   if (ret != ESP_OK) {
