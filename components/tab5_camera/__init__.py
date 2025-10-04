@@ -31,7 +31,6 @@ CameraResolution = tab5_camera_ns.enum("CameraResolution")
 RESOLUTION_VGA = CameraResolution.RESOLUTION_VGA
 RESOLUTION_720P = CameraResolution.RESOLUTION_720P
 RESOLUTION_1080P = CameraResolution.RESOLUTION_1080P
-RESOLUTION_QVGA = CameraResolution.RESOLUTION_QVGA
 
 PixelFormat = tab5_camera_ns.enum("PixelFormat")
 PIXEL_FORMAT_RGB565 = PixelFormat.PIXEL_FORMAT_RGB565
@@ -44,7 +43,6 @@ CAMERA_RESOLUTIONS = {
     "VGA": RESOLUTION_VGA,
     "720P": RESOLUTION_720P,
     "1080P": RESOLUTION_1080P,
-    "QVGA": RESOLUTION_QVGA,
 }
 
 PIXEL_FORMATS = {
