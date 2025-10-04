@@ -828,27 +828,18 @@ bool Tab5Camera::init_isp_() {
   }
   
   // ============================================================================
-  // CONFIGURATION AWB (Auto White Balance) - ESSENTIEL pour corriger la teinte verte
+  // CONFIGURATION AWB (Auto White Balance) - Pour corriger la teinte verte
   // ============================================================================
   esp_isp_awb_config_t awb_config = {};
   awb_config.sample_point = ISP_AWB_SAMPLE_POINT_AFTER_CCM;
   
-  isp_awb_ctlr_t awb_handle = NULL;
-  ret = esp_isp_awb_controller_new(this->isp_handle_, &awb_config, &awb_handle);
+  ret = esp_isp_awb_configure(this->isp_handle_, &awb_config);
   if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "AWB controller failed (optionnel): %d", ret);
+    ESP_LOGW(TAG, "AWB configure failed: %d", ret);
   } else {
-    // Configuration statistiques AWB
-    esp_isp_awb_config_t awb_stat_config = {};
-    
-    ret = esp_isp_awb_controller_reconfig(awb_handle, &awb_stat_config);
-    if (ret != ESP_OK) {
-      ESP_LOGW(TAG, "AWB reconfig failed: %d", ret);
-    }
-    
-    ret = esp_isp_awb_controller_enable(awb_handle);
+    ret = esp_isp_awb_enable(this->isp_handle_);
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ AWB configuré");
+      ESP_LOGI(TAG, "✓ AWB activé");
     } else {
       ESP_LOGW(TAG, "AWB enable failed: %d", ret);
     }
@@ -860,55 +851,80 @@ bool Tab5Camera::init_isp_() {
   esp_isp_ae_config_t ae_config = {};
   ae_config.sample_point = ISP_AE_SAMPLE_POINT_AFTER_DEMOSAIC;
   
-  isp_ae_ctlr_t ae_handle = NULL;
-  ret = esp_isp_ae_controller_new(this->isp_handle_, &ae_config, &ae_handle);
+  ret = esp_isp_ae_configure(this->isp_handle_, &ae_config);
   if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "AE controller failed (optionnel): %d", ret);
+    ESP_LOGW(TAG, "AE configure failed: %d", ret);
   } else {
-    ret = esp_isp_ae_controller_enable(ae_handle);
+    ret = esp_isp_ae_enable(this->isp_handle_);
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ AE configuré");
+      ESP_LOGI(TAG, "✓ AE activé");
     } else {
       ESP_LOGW(TAG, "AE enable failed: %d", ret);
     }
   }
   
   // ============================================================================
-  // CONFIGURATION BF (Black Level & Gain)
+  // CONFIGURATION BF (Black Level & Denoising) - Pour réduire le bruit
   // ============================================================================
   esp_isp_bf_config_t bf_config = {};
   bf_config.denoising_level = 8;
   bf_config.padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA;
+  bf_config.padding_data = 0;
+  bf_config.padding_line_tail_valid_start_pixel = 0;
+  bf_config.padding_line_tail_valid_end_pixel = 0;
   
   ret = esp_isp_bf_configure(this->isp_handle_, &bf_config);
   if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "BF config failed (optionnel): %d", ret);
+    ESP_LOGW(TAG, "BF configure failed: %d", ret);
   } else {
     ret = esp_isp_bf_enable(this->isp_handle_);
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ BF configuré");
+      ESP_LOGI(TAG, "✓ BF activé");
+    } else {
+      ESP_LOGW(TAG, "BF enable failed: %d", ret);
     }
   }
   
   // ============================================================================
-  // CONFIGURATION CCM (Color Correction Matrix)
+  // CONFIGURATION CCM (Color Correction Matrix) - Pour corriger les couleurs
   // ============================================================================
   esp_isp_ccm_config_t ccm_config = {};
+  // Matrice pour réduire le vert et équilibrer les couleurs
   float ccm_matrix[ISP_CCM_DIMENSION][ISP_CCM_DIMENSION] = {
-    {1.2f,  -0.1f, -0.1f},
-    {-0.1f,  1.0f, -0.1f},
-    {-0.1f, -0.1f,  1.2f}
+    {1.2f,  -0.1f, -0.1f},  // Rouge: renforcé
+    {-0.1f,  1.0f, -0.1f},  // Vert: réduit
+    {-0.1f, -0.1f,  1.2f}   // Bleu: renforcé
   };
   memcpy(ccm_config.matrix, ccm_matrix, sizeof(ccm_matrix));
   ccm_config.saturation = true;
   
   ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
   if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "CCM config failed (optionnel): %d", ret);
+    ESP_LOGW(TAG, "CCM configure failed: %d", ret);
   } else {
     ret = esp_isp_ccm_enable(this->isp_handle_);
     if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ CCM configuré");
+      ESP_LOGI(TAG, "✓ CCM activé");
+    } else {
+      ESP_LOGW(TAG, "CCM enable failed: %d", ret);
+    }
+  }
+  
+  // ============================================================================
+  // CONFIGURATION GAMMA - Pour améliorer le contraste
+  // ============================================================================
+  esp_isp_gamma_config_t gamma_config = {};
+  gamma_config.gamma_correction_en = true;
+  
+  ret = esp_isp_gamma_configure(this->isp_handle_, &gamma_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "Gamma configure failed: %d", ret);
+  } else {
+    ret = esp_isp_gamma_enable(this->isp_handle_);
+    if (ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ Gamma activé");
+    } else {
+      ESP_LOGW(TAG, "Gamma enable failed: %d", ret);
     }
   }
   
@@ -919,7 +935,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✅ ISP OK (avec AWB/AE/BF/CCM si disponibles)");
+  ESP_LOGI(TAG, "✅ ISP configuré avec succès");
   return true;
 }
 
