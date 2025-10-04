@@ -919,10 +919,8 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = isp_clock_hz;
   
-  // CORRECTION: Utilisation des valeurs numériques directement
-  // Patterns Bayer disponibles: 0=RGGB, 1=GRBG, 2=GBRG, 3=BGGR
-  // TESTEZ CES VALEURS UNE PAR UNE :
-  int bayer_pattern = 0;  // Commencez avec RGGB (0)
+  // Configuration du pattern Bayer
+  int bayer_pattern = 0;  // RGGB - testez 0, 1, 2, 3
   
   isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
   
@@ -946,9 +944,64 @@ bool Tab5Camera::init_isp_() {
   ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)", 
            isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
   
+  // Configurer les corrections couleur
   this->configure_isp_color_correction_();
   
   return true;
+}
+
+void Tab5Camera::configure_isp_color_correction_() {
+  ESP_LOGI(TAG, "Configuration corrections couleur");
+  
+  // Corrections couleur de base si supportées
+#ifdef CONFIG_ISP_COLOR_ENABLED
+  esp_isp_color_config_t color_config = {};
+  color_config.color_contrast = {128, 128, 128};
+  color_config.color_saturation = {128, 128, 128};
+  color_config.color_hue = 0;
+  color_config.color_brightness = 0;
+  
+  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
+  if (ret == ESP_OK) {
+    ESP_LOGI(TAG, "✓ Corrections couleur configurées");
+  }
+#endif
+
+  // Tentative d'activation AWB
+  if (this->sensor_device_) {
+    int awb_value = 1;
+    
+    // Utilisation de la valeur numérique pour AWB
+    esp_err_t ret = esp_cam_sensor_ioctl(this->sensor_device_, 0x03010001, &awb_value);
+    
+    if (ret == ESP_OK) {
+      ESP_LOGI(TAG, "✓ AWB activé");
+    } else {
+      ESP_LOGW(TAG, "AWB non supporté (erreur: 0x%x), utilisation balance manuelle", ret);
+      this->apply_manual_white_balance_();
+    }
+  }
+}
+
+void Tab5Camera::apply_manual_white_balance_() {
+  ESP_LOGI(TAG, "Application balance des blancs manuelle");
+  
+#ifdef CONFIG_ISP_COLOR_ENABLED
+  esp_isp_color_config_t color_config = {};
+  
+  // Réglages manuels pour compensation
+  color_config.color_contrast = {125, 125, 125};
+  color_config.color_saturation = {115, 115, 115};
+  color_config.color_hue = 0;
+  color_config.color_brightness = 5;
+  
+  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
+  if (ret == ESP_OK) {
+    ESP_LOGI(TAG, "✓ Balance manuelle appliquée");
+  } else {
+    ESP_LOGW(TAG, "Configuration couleur non supportée");
+  }
+#endif
 }
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
