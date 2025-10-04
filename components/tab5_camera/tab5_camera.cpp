@@ -892,24 +892,6 @@ bool Tab5Camera::init_isp_() {
     }
   }
   
-  // ============================================================================
-  // CONFIGURATION DEMOSAIC - Pour améliorer la conversion RAW vers RGB
-  // ============================================================================
-  esp_isp_demosaic_config_t demosaic_config = {};
-  demosaic_config.grad_ratio = ISP_DEMOSAIC_GRAD_RATIO_128;
-  
-  ret = esp_isp_demosaic_configure(this->isp_handle_, &demosaic_config);
-  if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "Demosaic configure failed: %d", ret);
-  } else {
-    ret = esp_isp_demosaic_enable(this->isp_handle_);
-    if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ Demosaic activé");
-    } else {
-      ESP_LOGW(TAG, "Demosaic enable failed: %d", ret);
-    }
-  }
-  
   // Activer l'ISP
   ret = esp_isp_enable(this->isp_handle_);
   if (ret != ESP_OK) {
@@ -917,7 +899,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✅ ISP configuré (BF + CCM + Sharpen + Demosaic)");
+  ESP_LOGI(TAG, "✅ ISP configuré (BF + CCM + Sharpen)");
   return true;
 }
 
