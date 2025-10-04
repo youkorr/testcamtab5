@@ -853,8 +853,10 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = isp_clock_hz;
   
-  // CORRECTION: Cast explicite vers le type enum
-  isp_config.bayer_order = (color_raw_element_order_t)3;  // Pattern BGGR du SC202CS 
+  // CORRECTION: Utiliser les bonnes constantes enum
+  // Pour SC202CS, essayez d'abord BGGR (valeur 3)
+  isp_config.bayer_order = (color_raw_element_order_t)ESP_CAM_SENSOR_BAYER_BGGR;
+  ESP_LOGI(TAG, "Configuration Bayer: BGGR (ESP_CAM_SENSOR_BAYER_BGGR=%d)", ESP_CAM_SENSOR_BAYER_BGGR);
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
@@ -870,16 +872,14 @@ bool Tab5Camera::init_isp_() {
   
   ESP_LOGI(TAG, "✓ ISP OK (clk=%u MHz, bayer=BGGR)", isp_clock_hz / 1000000);
   
-  // Optionnel: Configurer des corrections d'image si disponibles
+  // Configurer les corrections d'image
   this->configure_isp_color_correction_();
   
   return true;
 }
 
 void Tab5Camera::configure_isp_color_correction_() {
-  // Cette fonction configure des corrections de couleur optionnelles
-  // Si les APIs ne sont pas disponibles, elle ne fera rien
-  
+  // Désactiver les corrections couleur avancées si non supportées
 #ifdef CONFIG_ISP_COLOR_ENABLED
   esp_isp_color_config_t color_config = {};
   color_config.color_contrast = {128, 128, 128};  // Contraste neutre
@@ -890,28 +890,51 @@ void Tab5Camera::configure_isp_color_correction_() {
   esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret == ESP_OK) {
     ESP_LOGI(TAG, "✓ Color correction configurée");
-  } else {
-    ESP_LOGD(TAG, "Color correction non disponible (normal)");
   }
 #endif
 
-  // Tenter d'activer l'Auto White Balance si disponible
+  // Essayer différentes commandes AWB pour le SC202CS
   if (this->sensor_device_) {
-    int awb_enable = 1;
+    int awb_value = 1;
+    esp_err_t ret = ESP_FAIL;
     
-    // CORRECTION: Utiliser directement la valeur hexadécimale
-    esp_err_t ret = esp_cam_sensor_ioctl(
-      this->sensor_device_, 
-      0x03010001,  // Valeur originale en hexadécimal
-      &awb_enable
-    );
+    // Essayer différentes commandes AWB
+    const uint32_t awb_commands[] = {
+      0x009F0901,  // Commande AWB standard pour SC202CS
+      0x009F0903,  // Autre commande courante
+      0x03010001,  // Valeur originale
+      0x10000001,  // Commande AWB alternative
+    };
     
-    if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ AWB activé");
-    } else {
-      ESP_LOGW(TAG, "AWB non supporté (erreur: 0x%x)", ret);
+    for (int i = 0; i < sizeof(awb_commands)/sizeof(awb_commands[0]); i++) {
+      ret = esp_cam_sensor_ioctl(this->sensor_device_, awb_commands[i], &awb_value);
+      if (ret == ESP_OK) {
+        ESP_LOGI(TAG, "✓ AWB activé avec commande: 0x%08x", awb_commands[i]);
+        break;
+      } else {
+        ESP_LOGW(TAG, "AWB commande 0x%08x échouée: 0x%x", awb_commands[i], ret);
+      }
+    }
+    
+    if (ret != ESP_OK) {
+      ESP_LOGW(TAG, "AWB non supporté, utilisation du blanc fixe");
+      this->apply_manual_white_balance_();
     }
   }
+}
+
+void Tab5Camera::apply_manual_white_balance_() {
+  // Appliquer une balance des blancs manuelle
+#ifdef CONFIG_ISP_COLOR_ENABLED
+  esp_isp_color_config_t color_config = {};
+  color_config.color_contrast = {130, 130, 130};    // Légère augmentation du contraste
+  color_config.color_saturation = {120, 120, 120};  // Légère réduction de saturation
+  color_config.color_hue = 0;
+  color_config.color_brightness = 30;               // Légère augmentation luminosité
+  
+  esp_isp_color_configure(this->isp_handle_, &color_config);
+  ESP_LOGI(TAG, "✓ Balance des blancs manuelle appliquée");
+#endif
 }
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
