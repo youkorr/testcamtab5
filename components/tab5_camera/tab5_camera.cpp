@@ -1,4 +1,18 @@
-#include "tab5_camera.h"
+// Dans sc202cs.c, section sc202cs_isp_info[], modifiez la ligne bayer_type
+
+// TESTEZ CES 4 VALEURS UNE PAR UNE :
+
+// Option 1 (actuelle - donne du violet)
+.bayer_type = ESP_CAM_SENSOR_BAYER_BGGR,
+
+// Option 2 (essayez celle-ci en premier)
+.bayer_type = ESP_CAM_SENSOR_BAYER_RGGB,
+
+// Option 3 
+.bayer_type = ESP_CAM_SENSOR_BAYER_GRBG,
+
+// Option 4
+.bayer_type = ESP_CAM_SENSOR_BAYER_GBRG,#include "tab5_camera.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
 
@@ -809,11 +823,44 @@ bool Tab5Camera::init_isp_() {
   
   CameraResolutionInfo res = this->get_resolution_info_();
   
-  // Configuration de base ISP
+  // Récupérer le Bayer pattern du capteur
+  esp_cam_sensor_format_t sensor_format = {};
+  esp_cam_sensor_bayer_pattern_t bayer_pattern = ESP_CAM_SENSOR_BAYER_BGGR; // Défaut
+  
+  if (this->sensor_device_ && esp_cam_sensor_get_format(this->sensor_device_, &sensor_format) == ESP_OK) {
+    if (sensor_format.isp_info) {
+      bayer_pattern = sensor_format.isp_info->isp_v1_info.bayer_type;
+      ESP_LOGI(TAG, "Bayer pattern du capteur: %d", bayer_pattern);
+    }
+  }
+  
+  // Mapper le Bayer pattern du capteur vers l'ISP
+  isp_color_t isp_bayer = ISP_COLOR_BGGR; // Défaut
+  switch (bayer_pattern) {
+    case ESP_CAM_SENSOR_BAYER_RGGB:
+      isp_bayer = ISP_COLOR_RGGB;
+      ESP_LOGI(TAG, "ISP configuré pour RGGB");
+      break;
+    case ESP_CAM_SENSOR_BAYER_GRBG:
+      isp_bayer = ISP_COLOR_GRBG;
+      ESP_LOGI(TAG, "ISP configuré pour GRBG");
+      break;
+    case ESP_CAM_SENSOR_BAYER_GBRG:
+      isp_bayer = ISP_COLOR_GBRG;
+      ESP_LOGI(TAG, "ISP configuré pour GBRG");
+      break;
+    case ESP_CAM_SENSOR_BAYER_BGGR:
+    default:
+      isp_bayer = ISP_COLOR_BGGR;
+      ESP_LOGI(TAG, "ISP configuré pour BGGR");
+      break;
+  }
+  
+  // Configuration de base ISP avec le bon Bayer pattern
   esp_isp_processor_cfg_t isp_config = {};
   isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
   isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
-  isp_config.input_data_color_type = ISP_COLOR_RAW8;
+  isp_config.input_data_color_type = isp_bayer;  // Utiliser le bon pattern
   isp_config.output_data_color_type = ISP_COLOR_RGB565;
   isp_config.h_res = res.width;
   isp_config.v_res = res.height;
@@ -919,7 +966,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✅ ISP configuré");
+  ESP_LOGI(TAG, "✅ ISP configuré avec pattern Bayer correct");
   return true;
 }
 
