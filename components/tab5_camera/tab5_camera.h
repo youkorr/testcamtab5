@@ -59,6 +59,13 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
   void set_i2c_pins(uint8_t scl, uint8_t sda) { this->i2c_scl_pin_ = scl; this->i2c_sda_pin_ = sda; }
 
+  void set_ccm_red_gain(float value);
+  void set_ccm_green_gain(float value);
+  void set_ccm_blue_gain(float value);
+  void set_sensor_gain(uint32_t value);
+  void set_sensor_exposure(uint32_t value);
+
+
   // Opérations
   bool capture_frame();
   bool start_streaming();
