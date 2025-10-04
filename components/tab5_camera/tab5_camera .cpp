@@ -853,8 +853,8 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = isp_clock_hz;
   
-  // CRITIQUE: Spécifier le Bayer pattern BGGR du SC202CS
-  isp_config.bayer_order = ISP_BGGR;  // Pattern du SC202CS 
+  // CORRECTION: Utiliser la valeur numérique pour BGGR
+  isp_config.bayer_order = 3;  // Pattern BGGR du SC202CS 
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
@@ -898,17 +898,30 @@ void Tab5Camera::configure_isp_color_correction_() {
   // Tenter d'activer l'Auto White Balance si disponible
   if (this->sensor_device_) {
     int awb_enable = 1;
+    
+    // CORRECTION: Utiliser la constante correcte pour AWB
     esp_err_t ret = esp_cam_sensor_ioctl(
       this->sensor_device_, 
-      ESP_CAM_SENSOR_AWB,  // 0x03010001
+      ESP_CAM_CTRL_AWB,  // Correction de ESP_CAM_SENSOR_AWB
       &awb_enable
     );
+    
+    // Si ESP_CAM_CTRL_AWB ne fonctionne pas, essayer avec la valeur brute
+    if (ret != ESP_OK) {
+      ret = esp_cam_sensor_ioctl(
+        this->sensor_device_, 
+        0x03010001,  // Valeur originale en hexadécimal
+        &awb_enable
+      );
+    }
+    
     if (ret == ESP_OK) {
       ESP_LOGI(TAG, "✓ AWB activé");
+    } else {
+      ESP_LOGW(TAG, "AWB non supporté (erreur: 0x%x)", ret);
     }
   }
 }
-
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
   this->frame_buffer_size_ = res.width * res.height * 2;
