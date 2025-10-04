@@ -1059,9 +1059,7 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  // Configuration ISP pour correction couleur et luminosité
-  
-  // 1. Configuration BF (Black Level Correction)
+  // 1. Configuration BF (Bilateral Filter - Denoising)
   esp_isp_bf_config_t bf_config = {
     .padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA,
     .padding_data = 0,
@@ -1082,44 +1080,17 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ BF (denoising) activé");
   }
   
-  // 2. Configuration Color - Simplifiée pour ESP-IDF 5.4
-  esp_isp_color_config_t color_config = {
-    .color_contrast = {
-      .coefficients = {420, -140, -24, -96, 448, -96, -24, -140, 420},
-      .offset = {0, 0, 0}
-    },
-    .color_saturation = {
-      .coefficients = {384, 0, 0, 0, 384, 0, 0, 0, 384},
-      .offset = {0, 0, 0}
-    },
-    .color_hue = {
-      .coefficients = {256, 0, 0, 0, 256, 0, 0, 0, 256},
-      .offset = {0, 0, 0}
-    },
-    .color_brightness = {
-      .coefficients = {256, 0, 0, 0, 256, 0, 0, 0, 256},
-      .offset = {32, 32, 32}
-    }
-  };
-  ret = esp_isp_color_configure(this->isp_handle_, &color_config);
-  if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "Color config failed: %d", ret);
-  } else {
-    ret = esp_isp_color_enable(this->isp_handle_);
-    ESP_LOGI(TAG, "✓ Color correction activée");
-  }
-  
-  // 3. Configuration CCM (Color Correction Matrix)
+  // 2. Configuration CCM (Color Correction Matrix) - pour corriger le vert
   esp_isp_ccm_config_t ccm_config = {};
-  ccm_config.matrix[0][0] = 0x0140;  // R
-  ccm_config.matrix[0][1] = 0xFF80;
-  ccm_config.matrix[0][2] = 0xFF40;
-  ccm_config.matrix[1][0] = 0xFFC0;  // G
-  ccm_config.matrix[1][1] = 0x0180;
-  ccm_config.matrix[1][2] = 0xFFC0;
-  ccm_config.matrix[2][0] = 0xFFC0;  // B
-  ccm_config.matrix[2][1] = 0xFF80;
-  ccm_config.matrix[2][2] = 0x0140;
+  ccm_config.matrix[0][0] = 0x0140;  // R: 1.25R
+  ccm_config.matrix[0][1] = 0xFF80;  //   -0.5G
+  ccm_config.matrix[0][2] = 0xFF40;  //   -0.75B
+  ccm_config.matrix[1][0] = 0xFFC0;  // G: -0.25R
+  ccm_config.matrix[1][1] = 0x0180;  //    1.5G
+  ccm_config.matrix[1][2] = 0xFFC0;  //   -0.25B
+  ccm_config.matrix[2][0] = 0xFFC0;  // B: -0.25R
+  ccm_config.matrix[2][1] = 0xFF80;  //   -0.5G
+  ccm_config.matrix[2][2] = 0x0140;  //    1.25B
   
   ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
   if (ret != ESP_OK) {
@@ -1129,21 +1100,24 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ CCM (correction couleur) activée");
   }
   
-  // 4. Configuration Gamma - Corrigée pour ESP-IDF 5.4
+  // 3. Configuration Gamma pour améliorer le contraste
   isp_gamma_curve_points_t gamma_pts = {};
   for (int i = 0; i < ISP_GAMMA_CURVE_POINTS_NUM; i++) {
     gamma_pts.pt[i].x = i;
     gamma_pts.pt[i].y = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);
   }
   
-  // Utiliser COLOR_COMPONENT au lieu de ISP_COLOR_COMPONENT
+  // Configurer gamma pour chaque canal RGB
   ret = esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_R, &gamma_pts);
   ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_G, &gamma_pts);
   ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_B, &gamma_pts);
   if (ret != ESP_OK) {
     ESP_LOGW(TAG, "Gamma config failed: %d", ret);
   } else {
-    ret = esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_ALL);
+    // Activer gamma pour chaque canal séparément
+    ret = esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_R);
+    ret |= esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_G);
+    ret |= esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_B);
     ESP_LOGI(TAG, "✓ Gamma correction activée");
   }
   
