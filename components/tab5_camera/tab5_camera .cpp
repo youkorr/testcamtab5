@@ -853,10 +853,9 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = isp_clock_hz;
   
-  // CORRECTION: Utiliser les bonnes constantes enum
-  // Pour SC202CS, essayez d'abord BGGR (valeur 3)
-  isp_config.bayer_order = (color_raw_element_order_t)ESP_CAM_SENSOR_BAYER_BGGR;
-  ESP_LOGI(TAG, "Configuration Bayer: BGGR (ESP_CAM_SENSOR_BAYER_BGGR=%d)", ESP_CAM_SENSOR_BAYER_BGGR);
+  // CORRECTION: Utiliser la valeur numérique avec cast
+  isp_config.bayer_order = (color_raw_element_order_t)3;  // BGGR = 3
+  ESP_LOGI(TAG, "Configuration Bayer: BGGR (3)");
   
   esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
   if (ret != ESP_OK) {
@@ -923,6 +922,7 @@ void Tab5Camera::configure_isp_color_correction_() {
   }
 }
 
+// CORRECTION: Implémentation de la fonction manquante
 void Tab5Camera::apply_manual_white_balance_() {
   // Appliquer une balance des blancs manuelle
 #ifdef CONFIG_ISP_COLOR_ENABLED
@@ -930,10 +930,12 @@ void Tab5Camera::apply_manual_white_balance_() {
   color_config.color_contrast = {130, 130, 130};    // Légère augmentation du contraste
   color_config.color_saturation = {120, 120, 120};  // Légère réduction de saturation
   color_config.color_hue = 0;
-  color_config.color_brightness = 30;               // Légère augmentation luminosité
+  color_config.color_brightness = 10;               // Légère augmentation luminosité
   
-  esp_isp_color_configure(this->isp_handle_, &color_config);
-  ESP_LOGI(TAG, "✓ Balance des blancs manuelle appliquée");
+  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
+  if (ret == ESP_OK) {
+    ESP_LOGI(TAG, "✓ Balance des blancs manuelle appliquée");
+  }
 #endif
 }
 bool Tab5Camera::allocate_buffer_() {
