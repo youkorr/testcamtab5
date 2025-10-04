@@ -919,9 +919,10 @@ bool Tab5Camera::init_isp_() {
   isp_config.has_line_end_packet = false;
   isp_config.clk_hz = isp_clock_hz;
   
-  // CORRECTION: Utilisation des constantes correctes
-  // Testez dans cet ordre jusqu'à obtenir les bonnes couleurs :
-  esp_cam_sensor_bayer_pattern_t bayer_pattern = ESP_CAM_SENSOR_BAYER_RGGB;  // Commencez par RGGB
+  // CORRECTION: Utilisation des valeurs numériques directement
+  // Patterns Bayer disponibles: 0=RGGB, 1=GRBG, 2=GBRG, 3=BGGR
+  // TESTEZ CES VALEURS UNE PAR UNE :
+  int bayer_pattern = 0;  // Commencez avec RGGB (0)
   
   isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
   
