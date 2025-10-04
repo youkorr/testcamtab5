@@ -831,110 +831,37 @@ bool Tab5Camera::init_csi_() {
   return true;
 }
 
-bool Tab5Camera::init_isp_() {
-  ESP_LOGI(TAG, "Init ISP");
-  
-  CameraResolutionInfo res = this->get_resolution_info_();
-  
-  // Ajuster la fréquence ISP selon la résolution
-  uint32_t isp_clock_hz = 80000000;
-  if (this->resolution_ == RESOLUTION_720P) {
-    isp_clock_hz = 120000000;
-  }
-  
-  esp_isp_processor_cfg_t isp_config = {};
-  isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
-  isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
-  isp_config.input_data_color_type = ISP_COLOR_RAW8;
-  isp_config.output_data_color_type = ISP_COLOR_RGB565;
-  isp_config.h_res = res.width;
-  isp_config.v_res = res.height;
-  isp_config.has_line_start_packet = false;
-  isp_config.has_line_end_packet = false;
-  isp_config.clk_hz = isp_clock_hz;
-  
-  // CORRECTION: Utiliser la valeur numérique avec cast
-  isp_config.bayer_order = (color_raw_element_order_t)3;  // BGGR = 3
-  ESP_LOGI(TAG, "Configuration Bayer: BGGR (3)");
-  
-  esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "ISP create failed: %d", ret);
-    return false;
-  }
-  
-  ret = esp_isp_enable(this->isp_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "ISP enable failed: %d", ret);
-    return false;
-  }
-  
-  ESP_LOGI(TAG, "✓ ISP OK (clk=%u MHz, bayer=BGGR)", isp_clock_hz / 1000000);
-  
-  // Configurer les corrections d'image
-  this->configure_isp_color_correction_();
-  
-  return true;
-}
-
-void Tab5Camera::configure_isp_color_correction_() {
-  // Désactiver les corrections couleur avancées si non supportées
-#ifdef CONFIG_ISP_COLOR_ENABLED
-  esp_isp_color_config_t color_config = {};
-  color_config.color_contrast = {128, 128, 128};  // Contraste neutre
-  color_config.color_saturation = {128, 128, 128};  // Saturation normale
-  color_config.color_hue = 0;  // Pas de rotation de teinte
-  color_config.color_brightness = 0;  // Luminosité normale
-  
-  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
-  if (ret == ESP_OK) {
-    ESP_LOGI(TAG, "✓ Color correction configurée");
-  }
-#endif
-
-  // Essayer différentes commandes AWB pour le SC202CS
-  if (this->sensor_device_) {
-    int awb_value = 1;
-    esp_err_t ret = ESP_FAIL;
-    
-    // Essayer différentes commandes AWB
-    const uint32_t awb_commands[] = {
-      0x009F0901,  // Commande AWB standard pour SC202CS
-      0x009F0903,  // Autre commande courante
-      0x03010001,  // Valeur originale
-      0x10000001,  // Commande AWB alternative
-    };
-    
-    for (int i = 0; i < sizeof(awb_commands)/sizeof(awb_commands[0]); i++) {
-      ret = esp_cam_sensor_ioctl(this->sensor_device_, awb_commands[i], &awb_value);
-      if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "✓ AWB activé avec commande: 0x%08x", awb_commands[i]);
-        break;
-      } else {
-        ESP_LOGW(TAG, "AWB commande 0x%08x échouée: 0x%x", awb_commands[i], ret);
-      }
-    }
-    
-    if (ret != ESP_OK) {
-      ESP_LOGW(TAG, "AWB non supporté, utilisation du blanc fixe");
-      this->apply_manual_white_balance_();
-    }
-  }
-}
-
-// CORRECTION: Implémentation de la fonction manquante
 void Tab5Camera::apply_manual_white_balance_() {
-  // Appliquer une balance des blancs manuelle
+  // Balance des blancs manuelle améliorée
 #ifdef CONFIG_ISP_COLOR_ENABLED
   esp_isp_color_config_t color_config = {};
-  color_config.color_contrast = {130, 130, 130};    // Légère augmentation du contraste
-  color_config.color_saturation = {120, 120, 120};  // Légère réduction de saturation
+  
+  // Ajustements pour compenser l'absence d'AWB
+  // Ces valeurs peuvent être ajustées selon votre éclairage
+  
+  // Pour éclairage intérieur (lumière tungstène)
+  color_config.color_contrast = {125, 125, 125};    // Contraste légèrement réduit
+  color_config.color_saturation = {110, 110, 110};  // Saturation réduite
   color_config.color_hue = 0;
-  color_config.color_brightness = 10;               // Légère augmentation luminosité
+  color_config.color_brightness = 5;               // Légère augmentation luminosité
+  
+  // Correction de teinte spécifique selon le pattern Bayer
+  int bayer_pattern = 0;  // Mettez la même valeur que dans init_isp_()
+  
+  // Ajustements spécifiques selon le pattern détecté
+  if (bayer_pattern == 0) { // RGGB
+    // Compensation pour pattern RGGB
+    color_config.color_contrast = {120, 130, 120};
+  } else if (bayer_pattern == 3) { // BGGR  
+    // Compensation pour pattern BGGR
+    color_config.color_contrast = {130, 120, 130};
+  }
   
   esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret == ESP_OK) {
-    ESP_LOGI(TAG, "✓ Balance des blancs manuelle appliquée");
+    ESP_LOGI(TAG, "✓ Balance des blancs manuelle appliquée (pattern=%d)", bayer_pattern);
+  } else {
+    ESP_LOGW(TAG, "Configuration couleur non supportée");
   }
 #endif
 }
