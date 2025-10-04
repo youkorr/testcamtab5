@@ -226,7 +226,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {SC202CS_REG_END, 0x00},
 };
 
-// Configuration VGA 640x480 RAW8 - Simplifiée et fonctionnelle
+// Configuration VGA 640x480 RAW8 - Basée sur la config 1600x1200 d'origine
 static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
@@ -285,21 +285,21 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x3e00, 0x00},          {0x3e01, 0x4d},
     {0x3e02, 0xc0},          {0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
-    // Configuration VGA simple sans windowing complexe
+    // Configuration spécifique VGA 640x480
+    // Utilise toute la zone capteur mais sort en 640x480
     {0x3200, 0x00},          {0x3201, 0x00},  // Start X = 0
     {0x3202, 0x00},          {0x3203, 0x00},  // Start Y = 0
-    {0x3204, 0x06},          {0x3205, 0x47},  // End X = 1607
-    {0x3206, 0x04},          {0x3207, 0xaf},  // End Y = 1199
+    {0x3204, 0x06},          {0x3205, 0x4f},  // End X = 1615
+    {0x3206, 0x04},          {0x3207, 0xbf},  // End Y = 1215
     {0x3208, 0x02},          {0x3209, 0x80},  // Output Width = 640
     {0x320a, 0x01},          {0x320b, 0xe0},  // Output Height = 480
-    {0x3210, 0x00},          {0x3211, 0x04},  // X offset = 4
-    {0x3212, 0x00},          {0x3213, 0x04},  // Y offset = 4
+    {0x3210, 0x00},          {0x3211, 0x00},  // X offset = 0
+    {0x3212, 0x00},          {0x3213, 0x00},  // Y offset = 0
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
-    {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
+    {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250 (30fps)
     {0x3221, 0x00},  // Pas de flip/mirror
     {SC202CS_REG_END, 0x00},
 };
-
 // Configuration QVGA 320x240 RAW8
 static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
