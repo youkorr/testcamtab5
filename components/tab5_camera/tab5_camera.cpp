@@ -446,12 +446,27 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
 }
 
 static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
-    // Écrire la configuration 640x480
-    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)init_reglist_640x480_30fps);
+    sc202cs_resolution_t res = *((sc202cs_resolution_t*) format);
+    const sc202cs_reginfo_t *reg_list = NULL;
+
+    switch (res) {
+        case SC202CS_RES_640x480:
+            reg_list = init_reglist_640x480_30fps;
+            break;
+        case SC202CS_RES_1280x720:
+            reg_list = init_reglist_1280x720_30fps;
+            break;
+        default:
+            ESP_LOGE(SC202CS_TAG, "Unsupported resolution");
+            return ESP_ERR_INVALID_ARG;
+    }
+
+    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)reg_list);
     if (ret != ESP_OK) {
         ESP_LOGE(SC202CS_TAG, "Set format failed");
         return ret;
     }
+
     return ESP_OK;
 }
 
