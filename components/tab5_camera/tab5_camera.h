@@ -45,6 +45,8 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
+  void set_flip_mirror(bool enable) { this->flip_mirror_ = enable; }
+
   // Configuration
   void set_name(const std::string &name) { this->name_ = name; }
   void set_external_clock_pin(uint8_t pin) { this->external_clock_pin_ = pin; }
@@ -84,6 +86,8 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   PixelFormat pixel_format_{PIXEL_FORMAT_RGB565};
   uint8_t jpeg_quality_{10};
   uint8_t framerate_{30};
+
+  bool flip_mirror_{false};
   
   bool initialized_{false};
   bool streaming_{false};
