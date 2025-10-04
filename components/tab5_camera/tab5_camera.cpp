@@ -304,7 +304,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {SC202CS_REG_END, 0x00},
 };
 
-// Configuration QVGA 320x240 RAW8
+// Configuration QVGA 320x240 RAW8 - Version finale corrigée
 static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
@@ -376,6 +376,110 @@ static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x3221, 0x44},
     {SC202CS_REG_END, 0x00},
 };
+
+} // extern "C"49f, 0x03},
+    {0x34a6, 0x03},          {0x34a7, 0x1f},
+    {0x34a8, 0x38},          {0x34a9, 0x30},
+    {0x34ab, 0xd0},          {0x34ad, 0xd8},
+    {0x34f8, 0x1f},          {0x34f9, 0x20},
+    {0x3630, 0xa0},          {0x3631, 0x92},
+    {0x3632, 0x64},          {0x3633, 0x43},
+    {0x3637, 0x49},          {0x363a, 0x85},
+    {0x363c, 0x0f},          {0x3650, 0x31},
+    {0x3670, 0x0d},          {0x3674, 0xc0},
+    {0x3675, 0xa0},          {0x3676, 0xa0},
+    {0x3677, 0x92},          {0x3678, 0x96},
+    {0x3679, 0x9a},          {0x367c, 0x03},
+    {0x367d, 0x0f},          {0x367e, 0x01},
+    {0x367f, 0x0f},          {0x3698, 0x83},
+    {0x3699, 0x86},          {0x369a, 0x8c},
+    {0x369b, 0x94},          {0x36a2, 0x01},
+    {0x36a3, 0x03},          {0x36a4, 0x07},
+    {0x36ae, 0x0f},          {0x36af, 0x1f},
+    {0x36bd, 0x22},          {0x36be, 0x22},
+    {0x36bf, 0x22},          {0x36d0, 0x01},
+    {0x370f, 0x02},          {0x3721, 0x6c},
+    {0x3722, 0x8d},          {0x3725, 0xc5},
+    {0x3727, 0x14},          {0x3728, 0x04},
+    {0x37b7, 0x04},          {0x37b8, 0x04},
+    {0x37b9, 0x06},          {0x37bd, 0x07},
+    {0x37be, 0x0f},          {0x3901, 0x02},
+    {0x3903, 0x40},          {0x3905, 0x8d},
+    {0x3907, 0x00},          {0x3908, 0x41},
+    {0x391f, 0x41},          {0x3933, 0x80},
+    {0x3934, 0x02},          {0x3937, 0x6f},
+    {0x393a, 0x01},          {0x393d, 0x01},
+    {0x393e, 0xc0},          {0x39dd, 0x41},
+    {0x3e00, 0x00},          {0x3e01, 0x4d},
+    {0x3e02, 0xc0},          {0x3e09, 0x00},
+    {0x4509, 0x28},          {0x450d, 0x61},
+    // Windowing pour 320x240 centré depuis 1280x720
+    // Start X = (1280-320)/2 = 480 = 0x1E0
+    // Start Y = (720-240)/2 = 240 = 0xF0
+    {0x3200, 0x01},          {0x3201, 0xe0},  // Start X H/L = 0x01E0
+    {0x3202, 0x00},          {0x3203, 0xf0},  // Start Y H/L = 0x00F0
+    {0x3204, 0x05},          {0x3205, 0xdf},  // End X
+    {0x3206, 0x01},          {0x3207, 0xef},  // End Y
+    {0x3208, 0x01},          {0x3209, 0x40},  // Width = 320 = 0x0140
+    {0x320a, 0x00},          {0x320b, 0xf0},  // Height = 240 = 0x00F0
+    {0x3210, 0x00},          {0x3211, 0x00},  // X offset = 0
+    {0x3212, 0x00},          {0x3213, 0x00},  // Y offset = 0
+    // VTS/HTS pour 30fps
+    {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
+    {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
+    // Activer le binning 2x2 SANS flip (comme VGA)
+    {0x3221, 0x44},
+    {SC202CS_REG_END, 0x00},
+};349f, 0x03},
+    {0x34a6, 0x03},          {0x34a7, 0x1f},
+    {0x34a8, 0x38},          {0x34a9, 0x30},
+    {0x34ab, 0xd0},          {0x34ad, 0xd8},
+    {0x34f8, 0x1f},          {0x34f9, 0x20},
+    {0x3630, 0xa0},          {0x3631, 0x92},
+    {0x3632, 0x64},          {0x3633, 0x43},
+    {0x3637, 0x49},          {0x363a, 0x85},
+    {0x363c, 0x0f},          {0x3650, 0x31},
+    {0x3670, 0x0d},          {0x3674, 0xc0},
+    {0x3675, 0xa0},          {0x3676, 0xa0},
+    {0x3677, 0x92},          {0x3678, 0x96},
+    {0x3679, 0x9a},          {0x367c, 0x03},
+    {0x367d, 0x0f},          {0x367e, 0x01},
+    {0x367f, 0x0f},          {0x3698, 0x83},
+    {0x3699, 0x86},          {0x369a, 0x8c},
+    {0x369b, 0x94},          {0x36a2, 0x01},
+    {0x36a3, 0x03},          {0x36a4, 0x07},
+    {0x36ae, 0x0f},          {0x36af, 0x1f},
+    {0x36bd, 0x22},          {0x36be, 0x22},
+    {0x36bf, 0x22},          {0x36d0, 0x01},
+    {0x370f, 0x02},          {0x3721, 0x6c},
+    {0x3722, 0x8d},          {0x3725, 0xc5},
+    {0x3727, 0x14},          {0x3728, 0x04},
+    {0x37b7, 0x04},          {0x37b8, 0x04},
+    {0x37b9, 0x06},          {0x37bd, 0x07},
+    {0x37be, 0x0f},          {0x3901, 0x02},
+    {0x3903, 0x40},          {0x3905, 0x8d},
+    {0x3907, 0x00},          {0x3908, 0x41},
+    {0x391f, 0x41},          {0x3933, 0x80},
+    {0x3934, 0x02},          {0x3937, 0x6f},
+    {0x393a, 0x01},          {0x393d, 0x01},
+    {0x393e, 0xc0},          {0x39dd, 0x41},
+    {0x3e00, 0x00},          {0x3e01, 0x4d},
+    {0x3e02, 0xc0},          {0x3e09, 0x00},
+    {0x4509, 0x28},          {0x450d, 0x61},
+    // Windowing pour 320x240 centré depuis 1280x720
+    // Start X = (1280-320)/2 = 480 = 0x1E0
+    // Start Y = (720-240)/2 = 240 = 0xF0
+    {0x3200, 0x01},          {0x3201, 0xe0},  // Start X H/L = 0x01E0
+    {0x3202, 0x00},          {0x3203, 0xf0},  // Start Y H/L = 0x00F0
+    {0x3204, 0x05},          {0x3205, 0xdf},  // End X = 480+320-1 = 799 = 0x031F -> + start = 0x05DF
+    {0x3206, 0x01},          {0x3207, 0xef},  // End Y = 240+240-1 = 479 = 0x01EF
+    {0x3208, 0x01},          {0x3209, 0x40},  // Width = 320 = 0x0140
+    {0x320a, 0x00},          {0x320b, 0xf0},  // Height = 240 = 0x00F0
+    {0x3210, 0x00},          {0x3211, 0x00},  // X offset = 0
+    {0x3212, 0x00},          {0x3213, 0x00},  // Y offset = 0
+    {SC202CS_REG_END, 0x00},
+};
+
 } // extern "C"
 
 // ============================================================================
@@ -835,6 +939,23 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
+  // NOUVEAU: Augmenter l'exposition pour plus de luminosité
+  // Exposition = 0x04dc (1244 lignes) au lieu de 0x04dc par défaut
+  uint16_t exposure = 0x0800;  // Augmenter l'exposition
+  sc202cs_write(sccb_handle, 0x3e00, (exposure >> 12) & 0x0F);  // Expo H
+  sc202cs_write(sccb_handle, 0x3e01, (exposure >> 4) & 0xFF);   // Expo M
+  sc202cs_write(sccb_handle, 0x3e02, (exposure & 0x0F) << 4);   // Expo L
+  ESP_LOGI(TAG, "✓ Exposition augmentée: 0x%04X", exposure);
+  
+  // NOUVEAU: Augmenter le gain analogique pour plus de luminosité
+  // Gain analogique: 0x00 = 1x, 0x01 = 2x, 0x03 = 4x, 0x07 = 8x
+  sc202cs_write(sccb_handle, 0x3e09, 0x03);  // Again = 4x
+  ESP_LOGI(TAG, "✓ Gain analogique: 4x");
+  
+  // NOUVEAU: Activer AEC/AGC (Auto Exposure/Gain Control)
+  sc202cs_write(sccb_handle, 0x3e03, 0x0b);  // AEC/AGC enable
+  ESP_LOGI(TAG, "✓ AEC/AGC activé");
+  
   // NOUVEAU: Appliquer flip/mirror si configuré
   if (this->flip_mirror_) {
     int enable = 1;
@@ -938,7 +1059,69 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  ESP_LOGI(TAG, "✓ ISP OK");
+  // 1. Configuration BF (Bilateral Filter - Denoising)
+  esp_isp_bf_config_t bf_config = {
+    .padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA,
+    .padding_data = 0,
+    .bf_template = {
+      {1, 2, 1},
+      {2, 4, 2},
+      {1, 2, 1}
+    },
+    .denoising_level = 5,
+    .padding_line_tail_valid_start_pixel = 0,
+    .padding_line_tail_valid_end_pixel = 0,
+  };
+  ret = esp_isp_bf_configure(this->isp_handle_, &bf_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "BF config failed: %d", ret);
+  } else {
+    ret = esp_isp_bf_enable(this->isp_handle_);
+    ESP_LOGI(TAG, "✓ BF (denoising) activé");
+  }
+  
+  // 2. Configuration CCM (Color Correction Matrix) - pour corriger le vert
+  esp_isp_ccm_config_t ccm_config = {};
+  ccm_config.matrix[0][0] = 0x0140;  // R: 1.25R
+  ccm_config.matrix[0][1] = 0xFF80;  //   -0.5G
+  ccm_config.matrix[0][2] = 0xFF40;  //   -0.75B
+  ccm_config.matrix[1][0] = 0xFFC0;  // G: -0.25R
+  ccm_config.matrix[1][1] = 0x0180;  //    1.5G
+  ccm_config.matrix[1][2] = 0xFFC0;  //   -0.25B
+  ccm_config.matrix[2][0] = 0xFFC0;  // B: -0.25R
+  ccm_config.matrix[2][1] = 0xFF80;  //   -0.5G
+  ccm_config.matrix[2][2] = 0x0140;  //    1.25B
+  
+  ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "CCM config failed: %d", ret);
+  } else {
+    ret = esp_isp_ccm_enable(this->isp_handle_);
+    ESP_LOGI(TAG, "✓ CCM (correction couleur) activée");
+  }
+  
+  // 3. Configuration Gamma pour améliorer le contraste
+  isp_gamma_curve_points_t gamma_pts = {};
+  for (int i = 0; i < ISP_GAMMA_CURVE_POINTS_NUM; i++) {
+    gamma_pts.pt[i].x = i;
+    gamma_pts.pt[i].y = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);
+  }
+  
+  // Configurer gamma pour chaque canal RGB
+  ret = esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_R, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_G, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, COLOR_COMPONENT_B, &gamma_pts);
+  if (ret != ESP_OK) {
+    ESP_LOGW(TAG, "Gamma config failed: %d", ret);
+  } else {
+    // Activer gamma pour chaque canal séparément
+    ret = esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_R);
+    ret |= esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_G);
+    ret |= esp_isp_gamma_enable(this->isp_handle_, COLOR_COMPONENT_B);
+    ESP_LOGI(TAG, "✓ Gamma correction activée");
+  }
+  
+  ESP_LOGI(TAG, "✓ ISP OK avec corrections couleur");
   return true;
 }
 
