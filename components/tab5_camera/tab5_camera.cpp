@@ -132,24 +132,19 @@ typedef struct {
 #define SC202CS_REG_SHUTTER_TIME_H 0x3e00
 #define SC202CS_REG_SHUTTER_TIME_M 0x3e01
 #define SC202CS_REG_SHUTTER_TIME_L 0x3e02
-
 #define SC202CS_REG_GROUP_HOLD 0x3812
-
-#define SC202CS_REG_TOTAL_WIDTH_H  0x320c  // HTS,line width
+#define SC202CS_REG_TOTAL_WIDTH_H  0x320c
 #define SC202CS_REG_TOTAL_WIDTH_L  0x320d
-#define SC202CS_REG_TOTAL_HEIGHT_H 0x320e  // VTS,frame height
+#define SC202CS_REG_TOTAL_HEIGHT_H 0x320e
 #define SC202CS_REG_TOTAL_HEIGHT_L 0x320f
-
-#define SC202CS_REG_OUT_WIDTH_H  0x3208  // width
+#define SC202CS_REG_OUT_WIDTH_H  0x3208
 #define SC202CS_REG_OUT_WIDTH_L  0x3209
-#define SC202CS_REG_OUT_HEIGHT_H 0x320a  // height
+#define SC202CS_REG_OUT_HEIGHT_H 0x320a
 #define SC202CS_REG_OUT_HEIGHT_L 0x320b
-
-#define SC202CS_REG_OUT_START_PIXEL_H 0x3210  // start X
+#define SC202CS_REG_OUT_START_PIXEL_H 0x3210
 #define SC202CS_REG_OUT_START_PIXEL_L 0x3211
-#define SC202CS_REG_OUT_START_LINE_H  0x3212  // start Y
+#define SC202CS_REG_OUT_START_LINE_H  0x3212
 #define SC202CS_REG_OUT_START_LINE_L  0x3213
-
 #define SC202CS_REG_FLIP_MIRROR 0x3221
 
 #define SC202CS_PID         0xeb52
@@ -161,8 +156,7 @@ typedef struct {
 #endif
 #define delay_ms(ms) vTaskDelay((ms > portTICK_PERIOD_MS ? ms / portTICK_PERIOD_MS : 1))
 
-
-// cleaned_0x18_FT_SC2356_24Minput_576Mbps_1lane_8bit_1280x720_30fps
+// Configuration 1280x720 RAW8
 static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
@@ -231,6 +225,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {0x4509, 0x28},          {0x450d, 0x61},
     {SC202CS_REG_END, 0x00},
 };
+
 // Configuration 640x480 RAW8
 static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x0103, 0x01}, {SC202CS_REG_SLEEP_MODE, 0x00},
@@ -307,7 +302,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
 
 // Structure SCCB IO interne (utilise ESPHome I2C au lieu d'ESP-IDF)
 struct esp_sccb_io_t {
-    esphome::i2c::I2CDevice *i2c_device;  // Pointeur vers le device ESPHome
+    esphome::i2c::I2CDevice *i2c_device;
     uint32_t addr_bits_width;
     uint32_t val_bits_width;
 };
@@ -333,7 +328,6 @@ esp_err_t sccb_new_i2c_io_esphome(esphome::i2c::I2CDevice *i2c_device,
         return ESP_ERR_INVALID_ARG;
     }
     
-    // Allouer la structure SCCB IO
     esp_sccb_io_t *sccb = (esp_sccb_io_t*)malloc(sizeof(esp_sccb_io_t));
     if (!sccb) {
         return ESP_ERR_NO_MEM;
@@ -373,7 +367,6 @@ esp_err_t esp_cam_sensor_ioctl(esp_cam_sensor_device_t *dev,
 }
 
 // Implémentations des fonctions SCCB pour communication I2C
-// Utilise directement les fonctions ESPHome I2C au lieu du driver ESP-IDF
 esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle, 
                                        uint16_t reg_addr, 
                                        uint8_t reg_val) {
@@ -381,7 +374,6 @@ esp_err_t esp_sccb_transmit_reg_a16v8(esp_sccb_io_handle_t handle,
         return ESP_ERR_INVALID_ARG;
     }
     
-    // Écrire via ESPHome I2C
     uint8_t data[3] = {
         (uint8_t)((reg_addr >> 8) & 0xFF),
         (uint8_t)(reg_addr & 0xFF),
@@ -399,7 +391,6 @@ esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle,
         return ESP_ERR_INVALID_ARG;
     }
     
-    // Écrire l'adresse puis lire via ESPHome I2C
     uint8_t addr_buf[2] = {
         (uint8_t)((reg_addr >> 8) & 0xFF),
         (uint8_t)(reg_addr & 0xFF)
@@ -414,7 +405,7 @@ esp_err_t esp_sccb_transmit_receive_reg_a16v8(esp_sccb_io_handle_t handle,
     return (err == esphome::i2c::ERROR_OK) ? ESP_OK : ESP_FAIL;
 }
 
-// Symboles faibles pour éviter les erreurs de linking (en dehors de extern "C")
+// Symboles faibles pour éviter les erreurs de linking
 __attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_start = {};
 __attribute__((weak)) esp_cam_sensor_detect_fn_t __esp_cam_sensor_detect_fn_array_end = {};
 
@@ -445,6 +436,36 @@ static esp_err_t sc202cs_write_array(esp_sccb_io_handle_t handle, sc202cs_reginf
     return ret;
 }
 
+// Fonction pour définir des bits dans un registre
+static esp_err_t sc202cs_set_reg_bits(esp_sccb_io_handle_t handle, 
+                                       uint16_t reg, 
+                                       uint8_t offset, 
+                                       uint8_t length,
+                                       uint8_t value) {
+    esp_err_t ret = ESP_OK;
+    uint8_t reg_data = 0;
+
+    ret = sc202cs_read(handle, reg, &reg_data);
+    if (ret != ESP_OK) {
+        return ret;
+    }
+    
+    uint8_t mask = ((1 << length) - 1) << offset;
+    value = (reg_data & ~mask) | ((value << offset) & mask);
+    ret = sc202cs_write(handle, reg, value);
+    return ret;
+}
+
+// Fonction pour activer le mirror (flip horizontal)
+static esp_err_t sc202cs_set_mirror(esp_cam_sensor_device_t *dev, int enable) {
+    return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 1, 2, enable ? 0x03 : 0x00);
+}
+
+// Fonction pour activer le vflip (flip vertical)
+static esp_err_t sc202cs_set_vflip(esp_cam_sensor_device_t *dev, int enable) {
+    return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 5, 2, enable ? 0x03 : 0x00);
+}
+
 static esp_err_t sc202cs_get_sensor_id(esp_cam_sensor_device_t *dev, esp_cam_sensor_id_t *id) {
     uint8_t pid_h, pid_l;
     esp_err_t ret = sc202cs_read(dev->sccb_handle, SC202CS_REG_SENSOR_ID_H, &pid_h);
@@ -464,23 +485,79 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
     return ret;
 }
 
+// CORRECTION: Support multi-résolution
 static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
-    // Écrire la configuration 640x480
-    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)init_reglist_1280x720_30fps);
+    const sc202cs_reginfo_t *reg_list = NULL;
+    
+    if (format != NULL) {
+        const esp_cam_sensor_format_t *fmt = (const esp_cam_sensor_format_t *)format;
+        reg_list = (const sc202cs_reginfo_t *)fmt->regs;
+    } else if (dev->priv != NULL) {
+        uint32_t resolution_index = *(uint32_t*)dev->priv;
+        
+        switch (resolution_index) {
+            case 0: // VGA 640x480
+                reg_list = init_reglist_640x480_30fps;
+                ESP_LOGI(SC202CS_TAG, "Config: VGA 640x480@30fps");
+                break;
+            case 1: // 720P 1280x720
+                reg_list = init_reglist_1280x720_30fps;
+                ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps");
+                break;
+            case 2: // 1080P (pas encore disponible)
+            case 3: // QVGA (pas encore disponible)
+            default:
+                reg_list = init_reglist_1280x720_30fps;
+                ESP_LOGE(SC202CS_TAG, "Résolution non supportée, utilisation 720P");
+                break;
+        }
+    } else {
+        reg_list = init_reglist_1280x720_30fps;
+        ESP_LOGW(SC202CS_TAG, "Format par défaut: 720P");
+    }
+    
+    if (reg_list == NULL) {
+        ESP_LOGE(SC202CS_TAG, "Liste de registres invalide");
+        return ESP_FAIL;
+    }
+    
+    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)reg_list);
     
     if (ret != ESP_OK) {
-        ESP_LOGE(SC202CS_TAG, "Set format failed");
+        ESP_LOGE(SC202CS_TAG, "Set format failed: %d", ret);
         return ret;
     }
+    
+    ESP_LOGI(SC202CS_TAG, "✓ Format configuré");
     return ESP_OK;
 }
 
-
+// CORRECTION: Support flip/mirror via IOCTL
 static esp_err_t sc202cs_priv_ioctl(esp_cam_sensor_device_t *dev, uint32_t cmd, void *arg) {
-    if (cmd == 0x04000004) { // ESP_CAM_SENSOR_IOC_S_STREAM
-        return sc202cs_set_stream(dev, *(int*)arg);
+    esp_err_t ret = ESP_OK;
+    
+    switch (cmd) {
+        case 0x04000004: // ESP_CAM_SENSOR_IOC_S_STREAM
+            ret = sc202cs_set_stream(dev, *(int*)arg);
+            break;
+            
+        case 0x04000010: // ESP_CAM_SENSOR_IOC_S_VFLIP
+            ret = sc202cs_set_vflip(dev, *(int*)arg);
+            ESP_LOGI(SC202CS_TAG, "VFlip: %d", *(int*)arg);
+            break;
+            
+        case 0x04000011: // ESP_CAM_SENSOR_IOC_S_HMIRROR
+            ret = sc202cs_set_mirror(dev, *(int*)arg);
+            ESP_LOGI(SC202CS_TAG, "HMirror: %d", *(int*)arg);
+            break;
+            
+        default:
+            ESP_LOGW(SC202CS_TAG, "IOCTL non supporté: 0x%08X", cmd);
+            ret = ESP_ERR_NOT_SUPPORTED;
+            break;
     }
-    return ESP_OK;
+    
+    return ret;
 }
 
 static esp_err_t sc202cs_delete(esp_cam_sensor_device_t *dev) {
@@ -528,9 +605,6 @@ esp_cam_sensor_device_t *sc202cs_detect(esp_cam_sensor_config_t *config) {
     }
     
     ESP_LOGI(SC202CS_TAG, "SC202CS detected, PID=0x%x", dev->id.pid);
-    
-    // Configurer le format par défaut
-    sc202cs_set_format(dev, NULL);
     
     return dev;
 }
@@ -615,9 +689,6 @@ void Tab5Camera::setup() {
 bool Tab5Camera::init_sensor_() {
   ESP_LOGI(TAG, "Init capteur SC202CS");
   
-  // Utiliser directement le device I2C d'ESPHome (this hérite de I2CDevice)
-  // Pas besoin de créer un nouveau bus
-  
   // Configurer SCCB pour SC202CS
   sccb_i2c_config_t sccb_config = {};
   sccb_config.device_address = this->sensor_address_;
@@ -635,6 +706,14 @@ bool Tab5Camera::init_sensor_() {
   
   ESP_LOGI(TAG, "✓ SCCB initialisé via ESPHome I2C");
   
+  // NOUVEAU: Allouer priv pour stocker la résolution
+  uint32_t *resolution_ptr = (uint32_t*)malloc(sizeof(uint32_t));
+  if (!resolution_ptr) {
+    ESP_LOGE(TAG, "Erreur allocation mémoire pour résolution");
+    return false;
+  }
+  *resolution_ptr = (uint32_t)this->resolution_;
+  
   // Configurer le capteur
   esp_cam_sensor_config_t sensor_config = {};
   sensor_config.sccb_handle = sccb_handle;
@@ -648,8 +727,29 @@ bool Tab5Camera::init_sensor_() {
   this->sensor_device_ = sc202cs_detect(&sensor_config);
   
   if (this->sensor_device_ == nullptr) {
+    free(resolution_ptr);
     ESP_LOGE(TAG, "SC202CS detection failed");
     return false;
+  }
+  
+  // IMPORTANT: Stocker la résolution dans priv
+  this->sensor_device_->priv = resolution_ptr;
+  
+  // Configurer le format avec la résolution
+  if (sc202cs_set_format(this->sensor_device_, NULL) != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to set format");
+    free(resolution_ptr);
+    free(this->sensor_device_);
+    this->sensor_device_ = nullptr;
+    return false;
+  }
+  
+  // NOUVEAU: Appliquer flip/mirror si configuré
+  if (this->flip_mirror_) {
+    int enable = 1;
+    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000010, &enable); // VFlip
+    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000011, &enable); // HMirror
+    ESP_LOGI(TAG, "✓ Flip/Mirror activé");
   }
   
   ESP_LOGI(TAG, "✓ SC202CS détecté (PID: 0x%04X)", this->sensor_device_->id.pid);
@@ -781,8 +881,6 @@ bool IRAM_ATTR Tab5Camera::on_csi_new_frame_(
 ) {
   Tab5Camera *cam = (Tab5Camera*)user_data;
   
-  // Fournir le buffer pour la prochaine frame
-  // Utilise toujours le buffer courant pour l'acquisition
   trans->buffer = cam->frame_buffers_[cam->buffer_index_];
   trans->buflen = cam->frame_buffer_size_;
   
@@ -797,14 +895,8 @@ bool IRAM_ATTR Tab5Camera::on_csi_frame_done_(
   Tab5Camera *cam = (Tab5Camera*)user_data;
   
   if (trans->received_size > 0) {
-    // Marquer la frame comme prête AVANT de changer de buffer
     cam->frame_ready_ = true;
-    
-    // Alterner vers l'autre buffer pour la prochaine frame
     cam->buffer_index_ = (cam->buffer_index_ + 1) % 2;
-    
-    // Le buffer actuel (celui qui vient d'être rempli) reste dans current_frame_buffer_
-    // jusqu'à ce que capture_frame() le marque comme consommé
   }
   
   return false;
@@ -832,7 +924,7 @@ bool Tab5Camera::start_streaming() {
     int enable = 1;
     esp_err_t ret = esp_cam_sensor_ioctl(
       this->sensor_device_, 
-      0x04000004,  // ESP_CAM_SENSOR_IOC_S_STREAM
+      0x04000004,
       &enable
     );
     if (ret != ESP_OK) {
@@ -841,8 +933,7 @@ bool Tab5Camera::start_streaming() {
     }
   }
   
-  // Démarrer CSI en mode continu
-  // Les callbacks on_csi_new_frame_ et on_csi_frame_done_ gèrent les buffers
+  // Démarrer CSI
   esp_err_t ret = esp_cam_ctlr_start(this->csi_handle_);
   if (ret != ESP_OK) {
     ESP_LOGE(TAG, "Start CSI failed: %d", ret);
@@ -850,7 +941,7 @@ bool Tab5Camera::start_streaming() {
   }
   
   this->streaming_ = true;
-  ESP_LOGI(TAG, "✅ Streaming actif (mode continu)");
+  ESP_LOGI(TAG, "✅ Streaming actif");
   return true;
 }
 
@@ -872,18 +963,14 @@ bool Tab5Camera::stop_streaming() {
 }
 
 bool Tab5Camera::capture_frame() {
-  // Retourne true s'il y a une nouvelle frame disponible
   if (!this->streaming_) {
     return false;
   }
   
-  // Vérifier atomiquement si une frame est prête
   bool was_ready = this->frame_ready_;
   if (was_ready) {
-    this->frame_ready_ = false;  // Marquer comme consommée
+    this->frame_ready_ = false;
     
-    // Mettre à jour le pointeur vers le buffer de la dernière frame complète
-    // Le buffer_index_ a déjà été incrémenté dans le callback
     uint8_t last_complete_buffer = (this->buffer_index_ + 1) % 2;
     this->current_frame_buffer_ = this->frame_buffers_[last_complete_buffer];
   }
@@ -911,6 +998,7 @@ void Tab5Camera::dump_config() {
   ESP_LOGCONFIG(TAG, "  Résolution: %ux%u", 
                 this->get_image_width(), this->get_image_height());
   ESP_LOGCONFIG(TAG, "  Format: RGB565");
+  ESP_LOGCONFIG(TAG, "  Flip/Mirror: %s", this->flip_mirror_ ? "OUI" : "NON");
   ESP_LOGCONFIG(TAG, "  Streaming: %s", this->streaming_ ? "OUI" : "NON");
   ESP_LOGCONFIG(TAG, "  Initialisé: %s", this->initialized_ ? "OUI" : "NON");
 }
