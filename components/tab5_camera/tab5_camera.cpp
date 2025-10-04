@@ -226,7 +226,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {SC202CS_REG_END, 0x00},
 };
 
-// Configuration 640x480 RAW8 - CORRIGÉE avec binning au lieu de windowing
+// Configuration 640x480 RAW8 - CORRIGÉE sans flip/mirror
 static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
@@ -297,8 +297,8 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     // VTS/HTS pour 30fps
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
     {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
-    // Activer le binning 2x2
-    {0x3221, 0x66},  // Binning horizontal + vertical
+    // PAS de flip/mirror - orientation normale (0x3221 = 0x00)
+    {0x3221, 0x00},  // Pas de binning, pas de flip/mirror
     {SC202CS_REG_END, 0x00},
 };
 
