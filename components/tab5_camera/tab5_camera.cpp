@@ -304,7 +304,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {SC202CS_REG_END, 0x00},
 };
 
-// Configuration QVGA 320x240 RAW8
+// Configuration QVGA 320x240 RAW8 - CORRIGÉE
 static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
@@ -328,6 +328,55 @@ static const sc202cs_reginfo_t init_reglist_320x240_30fps[] = {
     {0x33b3, 0x38},          {0x33f9, 0x40},
     {0x33fb, 0x48},          {0x33fc, 0x0f},
     {0x33fd, 0x1f},          {0x349f, 0x03},
+    {0x34a6, 0x03},          {0x34a7, 0x1f},
+    {0x34a8, 0x38},          {0x34a9, 0x30},
+    {0x34ab, 0xd0},          {0x34ad, 0xd8},
+    {0x34f8, 0x1f},          {0x34f9, 0x20},
+    {0x3630, 0xa0},          {0x3631, 0x92},
+    {0x3632, 0x64},          {0x3633, 0x43},
+    {0x3637, 0x49},          {0x363a, 0x85},
+    {0x363c, 0x0f},          {0x3650, 0x31},
+    {0x3670, 0x0d},          {0x3674, 0xc0},
+    {0x3675, 0xa0},          {0x3676, 0xa0},
+    {0x3677, 0x92},          {0x3678, 0x96},
+    {0x3679, 0x9a},          {0x367c, 0x03},
+    {0x367d, 0x0f},          {0x367e, 0x01},
+    {0x367f, 0x0f},          {0x3698, 0x83},
+    {0x3699, 0x86},          {0x369a, 0x8c},
+    {0x369b, 0x94},          {0x36a2, 0x01},
+    {0x36a3, 0x03},          {0x36a4, 0x07},
+    {0x36ae, 0x0f},          {0x36af, 0x1f},
+    {0x36bd, 0x22},          {0x36be, 0x22},
+    {0x36bf, 0x22},          {0x36d0, 0x01},
+    {0x370f, 0x02},          {0x3721, 0x6c},
+    {0x3722, 0x8d},          {0x3725, 0xc5},
+    {0x3727, 0x14},          {0x3728, 0x04},
+    {0x37b7, 0x04},          {0x37b8, 0x04},
+    {0x37b9, 0x06},          {0x37bd, 0x07},
+    {0x37be, 0x0f},          {0x3901, 0x02},
+    {0x3903, 0x40},          {0x3905, 0x8d},
+    {0x3907, 0x00},          {0x3908, 0x41},
+    {0x391f, 0x41},          {0x3933, 0x80},
+    {0x3934, 0x02},          {0x3937, 0x6f},
+    {0x393a, 0x01},          {0x393d, 0x01},
+    {0x393e, 0xc0},          {0x39dd, 0x41},
+    {0x3e00, 0x00},          {0x3e01, 0x4d},
+    {0x3e02, 0xc0},          {0x3e09, 0x00},
+    {0x4509, 0x28},          {0x450d, 0x61},
+    // Windowing pour 320x240
+    {0x3200, 0x01},          {0x3201, 0xe0},
+    {0x3202, 0x00},          {0x3203, 0xf0},
+    {0x3204, 0x05},          {0x3205, 0xdf},
+    {0x3206, 0x01},          {0x3207, 0xef},
+    {0x3208, 0x01},          {0x3209, 0x40},
+    {0x320a, 0x00},          {0x320b, 0xf0},
+    {0x3210, 0x00},          {0x3211, 0x00},
+    {0x3212, 0x00},          {0x3213, 0x00},
+    {0x320c, 0x07},          {0x320d, 0x80},
+    {0x320e, 0x04},          {0x320f, 0xe2},
+    {0x3221, 0x44},
+    {SC202CS_REG_END, 0x00},
+};49f, 0x03},
     {0x34a6, 0x03},          {0x34a7, 0x1f},
     {0x34a8, 0x38},          {0x34a9, 0x30},
     {0x34ab, 0xd0},          {0x34ad, 0xd8},
@@ -889,6 +938,23 @@ bool Tab5Camera::init_sensor_() {
     return false;
   }
   
+  // NOUVEAU: Augmenter l'exposition pour plus de luminosité
+  // Exposition = 0x04dc (1244 lignes) au lieu de 0x04dc par défaut
+  uint16_t exposure = 0x0800;  // Augmenter l'exposition
+  sc202cs_write(sccb_handle, 0x3e00, (exposure >> 12) & 0x0F);  // Expo H
+  sc202cs_write(sccb_handle, 0x3e01, (exposure >> 4) & 0xFF);   // Expo M
+  sc202cs_write(sccb_handle, 0x3e02, (exposure & 0x0F) << 4);   // Expo L
+  ESP_LOGI(TAG, "✓ Exposition augmentée: 0x%04X", exposure);
+  
+  // NOUVEAU: Augmenter le gain analogique pour plus de luminosité
+  // Gain analogique: 0x00 = 1x, 0x01 = 2x, 0x03 = 4x, 0x07 = 8x
+  sc202cs_write(sccb_handle, 0x3e09, 0x03);  // Again = 4x
+  ESP_LOGI(TAG, "✓ Gain analogique: 4x");
+  
+  // NOUVEAU: Activer AEC/AGC (Auto Exposure/Gain Control)
+  sc202cs_write(sccb_handle, 0x3e03, 0x0b);  // AEC/AGC enable
+  ESP_LOGI(TAG, "✓ AEC/AGC activé");
+  
   // NOUVEAU: Appliquer flip/mirror si configuré
   if (this->flip_mirror_) {
     int enable = 1;
@@ -992,10 +1058,10 @@ bool Tab5Camera::init_isp_() {
     return false;
   }
   
-  // NOUVEAU: Configuration ISP pour correction couleur et luminosité
+  // Configuration ISP pour correction couleur et luminosité
   
   // 1. Configuration BF (Black Level Correction)
-  isp_bf_config_t bf_config = {
+  esp_isp_bf_config_t bf_config = {
     .padding_mode = ISP_BF_EDGE_PADDING_MODE_SRND_DATA,
     .padding_data = 0,
     .bf_template = {
@@ -1003,7 +1069,7 @@ bool Tab5Camera::init_isp_() {
       {2, 4, 2},
       {1, 2, 1}
     },
-    .denoising_level = 5,  // Réduction du bruit
+    .denoising_level = 5,
     .padding_line_tail_valid_start_pixel = 0,
     .padding_line_tail_valid_end_pixel = 0,
   };
@@ -1015,13 +1081,13 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ BF (denoising) activé");
   }
   
-  // 2. Configuration Color (correction matrice de couleur)
-  isp_color_config_t color_config = {
+  // 2. Configuration Color
+  esp_isp_color_config_t color_config = {
     .color_contrast = {
       .matrix = {
-        420, -140, -24,   // R
-        -96, 448, -96,    // G  
-        -24, -140, 420    // B
+        420, -140, -24,
+        -96, 448, -96,
+        -24, -140, 420
       },
       .offset = {0, 0, 0}
     },
@@ -1047,7 +1113,7 @@ bool Tab5Camera::init_isp_() {
         0, 256, 0,
         0, 0, 256
       },
-      .offset = {32, 32, 32}  // Augmenter la luminosité
+      .offset = {32, 32, 32}
     }
   };
   ret = esp_isp_color_configure(this->isp_handle_, &color_config);
@@ -1058,16 +1124,14 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ Color correction activée");
   }
   
-  // 3. Configuration CCM (Color Correction Matrix) pour corriger le vert
-  isp_ccm_config_t ccm_config = {
+  // 3. Configuration CCM (Color Correction Matrix)
+  esp_isp_ccm_config_t ccm_config = {
     .matrix = {
-      // Matrice de correction pour réduire le vert et améliorer les couleurs
-      // Format: Q8.8 (8 bits entier + 8 bits décimale)
-      {0x0140, 0xFF80, 0xFF40},  // R: 1.25R - 0.5G - 0.75B
-      {0xFFC0, 0x0180, 0xFFC0},  // G: -0.25R + 1.5G - 0.25B  
-      {0xFFC0, 0xFF80, 0x0140},  // B: -0.25R - 0.5G + 1.25B
+      {0x0140, 0xFF80, 0xFF40},
+      {0xFFC0, 0x0180, 0xFFC0},
+      {0xFFC0, 0xFF80, 0x0140},
     },
-    .saturation = ISP_CCM_SATURATION_100  // Saturation à 100%
+    .saturation = ISP_CCM_SATURATION_100
   };
   ret = esp_isp_ccm_configure(this->isp_handle_, &ccm_config);
   if (ret != ESP_OK) {
@@ -1077,39 +1141,21 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ CCM (correction couleur) activée");
   }
   
-  // 4. Configuration Gamma pour améliorer le contraste
+  // 4. Configuration Gamma - CORRIGÉE pour ESP-IDF 5.4
   isp_gamma_curve_points_t gamma_pts = {};
-  // Courbe gamma standard pour meilleur contraste
   for (int i = 0; i < ISP_GAMMA_CURVE_POINTS_NUM; i++) {
-    gamma_pts.pts[i] = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);
+    gamma_pts.pt[i].x = i;
+    gamma_pts.pt[i].y = (i * 1023) / (ISP_GAMMA_CURVE_POINTS_NUM - 1);
   }
-  ret = esp_isp_gamma_configure(this->isp_handle_, &gamma_pts);
+  // ESP-IDF 5.4 nécessite 3 paramètres (RGB séparément)
+  ret = esp_isp_gamma_configure(this->isp_handle_, ISP_COLOR_COMPONENT_R, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, ISP_COLOR_COMPONENT_G, &gamma_pts);
+  ret |= esp_isp_gamma_configure(this->isp_handle_, ISP_COLOR_COMPONENT_B, &gamma_pts);
   if (ret != ESP_OK) {
     ESP_LOGW(TAG, "Gamma config failed: %d", ret);
   } else {
-    ret = esp_isp_gamma_enable(this->isp_handle_);
+    ret = esp_isp_gamma_enable(this->isp_handle_, ISP_COLOR_COMPONENT_ALL);
     ESP_LOGI(TAG, "✓ Gamma correction activée");
-  }
-  
-  // 5. Configuration AWB (Auto White Balance) pour corriger la balance des blancs
-  isp_awb_config_t awb_config = {
-    .sample_point = ISP_AWB_SAMPLE_POINT_AFTER_CCM,
-    .window = {
-      .top_left = {0, 0},
-      .btm_right = {res.width - 1, res.height - 1}
-    },
-    .white_patch = {
-      .luminance = 220,
-      .red_green_ratio = 1.0f,
-      .blue_green_ratio = 1.0f
-    }
-  };
-  ret = esp_isp_awb_configure(this->isp_handle_, &awb_config);
-  if (ret != ESP_OK) {
-    ESP_LOGW(TAG, "AWB config failed: %d", ret);
-  } else {
-    ret = esp_isp_awb_enable(this->isp_handle_);
-    ESP_LOGI(TAG, "✓ AWB (balance des blancs) activée");
   }
   
   ESP_LOGI(TAG, "✓ ISP OK avec corrections couleur");
