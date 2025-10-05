@@ -30,7 +30,7 @@ CONF_ADDRESS_SENSOR_SC202CS = "address_sensor_sc202cs"
 CameraResolution = tab5_camera_ns.enum("CameraResolution")
 RESOLUTION_VGA = CameraResolution.RESOLUTION_VGA
 RESOLUTION_720P = CameraResolution.RESOLUTION_720P
-RESOLUTION_1080P = CameraResolution.RESOLUTION_1080P
+RESOLUTION_UXGA = CameraResolution.RESOLUTION_UXGA
 
 PixelFormat = tab5_camera_ns.enum("PixelFormat")
 PIXEL_FORMAT_RGB565 = PixelFormat.PIXEL_FORMAT_RGB565
@@ -42,7 +42,7 @@ PIXEL_FORMAT_JPEG = PixelFormat.PIXEL_FORMAT_JPEG
 CAMERA_RESOLUTIONS = {
     "VGA": RESOLUTION_VGA,
     "720P": RESOLUTION_720P,
-    "1080P": RESOLUTION_1080P,
+    "UXGA": RESOLUTION_UXGA,
 }
 
 PIXEL_FORMATS = {
