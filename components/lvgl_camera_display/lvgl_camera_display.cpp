@@ -18,7 +18,7 @@ void LVGLCameraDisplay::setup() {
   
   ESP_LOGI(TAG, "✅ LVGL Camera Display initialisé");
   ESP_LOGI(TAG, "   Update interval: %u ms (~%d FPS)", 
-           this->update_interval_, 1000 / this->update_interval_);
+           this->update_interval_, 33 / this->update_interval_);   //this->update_interval_, 1000 / this->update_interval_);
 }
 
 void LVGLCameraDisplay::loop() {
