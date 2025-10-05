@@ -1449,3 +1449,6 @@ ESP_CAM_SENSOR_DETECT_FN(sc202cs_detect, ESP_CAM_SENSOR_MIPI_CSI, SC202CS_SCCB_A
     return sc202cs_detect(config);
 }
 #endif
+
+}  // namespace tab5_camera
+}  // namespace esphome
