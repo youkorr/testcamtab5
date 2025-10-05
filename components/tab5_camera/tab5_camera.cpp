@@ -856,50 +856,35 @@ bool Tab5Camera::init_ldo_() {
 }
 
 bool Tab5Camera::init_isp_() {
-    ESP_LOGI(TAG, "Initialisation ISP");
-
-    CameraResolutionInfo res = this->get_resolution_info_();
-
-    uint32_t isp_clock_hz = 80000000;
-    if (this->resolution_ == RESOLUTION_720P) {
-        isp_clock_hz = 120000000;
-    }
-
-    esp_isp_processor_cfg_t isp_config = {};
-    isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
-    isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
-    isp_config.input_data_color_type = ISP_COLOR_RAW8;
-    isp_config.output_data_color_type = ISP_COLOR_RGB565;
-    isp_config.h_res = res.width;
-    isp_config.v_res = res.height;
-    isp_config.has_line_start_packet = false;
-    isp_config.has_line_end_packet = false;
-    isp_config.clk_hz = isp_clock_hz;
-
-    int bayer_pattern = 0;  // RGGB
-    isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
-
-    const char* bayer_names[] = {"RGGB", "GRBG", "GBRG", "BGGR"};
-    ESP_LOGI(TAG, "Pattern Bayer: %s (%d)", bayer_names[bayer_pattern], bayer_pattern);
-
-    esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Échec création ISP: 0x%x", ret);
-        return false;
-    }
-
-    ret = esp_isp_enable(this->isp_handle_);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Échec activation ISP: 0x%x", ret);
-        esp_isp_del_processor(this->isp_handle_);
-        this->isp_handle_ = nullptr;
-        return false;
-    }
-
-    ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)",
-             isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
-
-    return true;
+  ESP_LOGI(TAG, "Init ISP");
+  
+  CameraResolutionInfo res = this->get_resolution_info_();
+  
+  esp_isp_processor_cfg_t isp_config = {};
+  isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
+  isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
+  isp_config.input_data_color_type = ISP_COLOR_RAW8;
+  isp_config.output_data_color_type = ISP_COLOR_RGB565;
+  isp_config.h_res = res.width;
+  isp_config.v_res = res.height;
+  isp_config.has_line_start_packet = false;
+  isp_config.has_line_end_packet = false;
+  isp_config.clk_hz = 80000000;
+  
+  esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "ISP create failed: %d", ret);
+    return false;
+  }
+  
+  ret = esp_isp_enable(this->isp_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "ISP enable failed: %d", ret);
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "✓ ISP OK");
+  return true;
 }
 
 bool Tab5Camera::allocate_buffer_() {
