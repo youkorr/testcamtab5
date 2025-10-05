@@ -22,8 +22,7 @@ namespace tab5_camera {
 enum CameraResolution {
   RESOLUTION_VGA = 0,
   RESOLUTION_720P = 1,
-
-
+  RESOLUTION_1080P = 2,
 };
 
 enum PixelFormat {
@@ -45,6 +44,8 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void dump_config() override;
   float get_setup_priority() const override { return setup_priority::DATA; }
 
+  void set_flip_mirror(bool enable) { this->flip_mirror_ = enable; }
+
   // Configuration
   void set_name(const std::string &name) { this->name_ = name; }
   void set_external_clock_pin(uint8_t pin) { this->external_clock_pin_ = pin; }
@@ -57,6 +58,8 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   void set_jpeg_quality(uint8_t quality) { this->jpeg_quality_ = quality; }
   void set_framerate(uint8_t fps) { this->framerate_ = fps; }
   void set_i2c_pins(uint8_t scl, uint8_t sda) { this->i2c_scl_pin_ = scl; this->i2c_sda_pin_ = sda; }
+
+
 
   // Opérations
   bool capture_frame();
@@ -84,6 +87,14 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   PixelFormat pixel_format_{PIXEL_FORMAT_RGB565};
   uint8_t jpeg_quality_{10};
   uint8_t framerate_{30};
+
+  bool flip_mirror_{false};
+
+  void apply_manual_white_balance_();
+
+  
+  
+
   
   bool initialized_{false};
   bool streaming_{false};
@@ -105,6 +116,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool init_csi_();
   bool init_isp_();
   bool allocate_buffer_();
+  void configure_isp_color_correction_();  // Nouvelle fonction
   CameraResolutionInfo get_resolution_info_() const;
   
   static bool IRAM_ATTR on_csi_new_frame_(
