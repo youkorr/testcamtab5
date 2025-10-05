@@ -464,27 +464,56 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
     return ret;
 }
 
-static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format)
-{
-    const sc202cs_reginfo_t *reg_list;
-
-    // Déterminer la liste de registres à appliquer en fonction du format
-    if (format == FORMAT_1280x720) {
-        reg_list = init_reglist_1280x720_30fps;
-    } else if (format == FORMAT_640x480) {
-        reg_list = init_reglist_640x480_30fps;
+static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
+    // Si format est NULL, utiliser la config par défaut depuis dev->priv
+    const sc202cs_reginfo_t *reg_list = NULL;
+    
+    if (format != NULL) {
+        // Format spécifié explicitement
+        const esp_cam_sensor_format_t *fmt = (const esp_cam_sensor_format_t *)format;
+        reg_list = (const sc202cs_reginfo_t *)fmt->regs;
+    } else if (dev->priv != NULL) {
+        // Utiliser la résolution stockée dans priv
+        uint32_t resolution_index = *(uint32_t*)dev->priv;
+        
+        switch (resolution_index) {
+            case 0: // VGA 640x480
+                reg_list = init_reglist_640x480_30fps;
+                ESP_LOGI(SC202CS_TAG, "Config: VGA 640x480@30fps");
+                break;
+            case 1: // 720P 1280x720
+                reg_list = init_reglist_1280x720_30fps;
+                ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps");
+                break;
+            case 3: // QVGA (si disponible)
+            default:
+                // Par défaut, utiliser 720P
+                reg_list = init_reglist_1280x720_30fps;
+                ESP_LOGE(SC202CS_TAG, "Résolution non supportée, utilisation 720P");
+                break;
+        }
     } else {
-        ESP_LOGE(SC202CS_TAG, "Unsupported format");
-        return ESP_ERR_INVALID_ARG;
+        // Fallback absolu
+        reg_list = init_reglist_1280x720_30fps;
+        ESP_LOGW(SC202CS_TAG, "Format par défaut: 720P");
     }
-
-    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, reg_list);
+    
+    if (reg_list == NULL) {
+        ESP_LOGE(SC202CS_TAG, "Liste de registres invalide");
+        return ESP_FAIL;
+    }
+    
+    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)reg_list);
+    
     if (ret != ESP_OK) {
-        ESP_LOGE(SC202CS_TAG, "Set format failed");
+        ESP_LOGE(SC202CS_TAG, "Set format failed: %d", ret);
         return ret;
     }
+    
+    ESP_LOGI(SC202CS_TAG, "✓ Format configuré");
     return ESP_OK;
 }
+
 
 
 
