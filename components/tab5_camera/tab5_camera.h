@@ -22,7 +22,7 @@ namespace tab5_camera {
 enum CameraResolution {
   RESOLUTION_VGA = 0,
   RESOLUTION_720P = 1,
-  RESOLUTION_UXGA = 2,
+  //RESOLUTION_UXGA = 2,
 
 };
 
