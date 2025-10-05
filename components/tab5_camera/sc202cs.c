@@ -11,6 +11,8 @@
  * Note2: the analog gain of SC202CS will be affected by temperature, it is recommended to increase Dgain first and then
  * Again.
  */
+extern "C" {
+
 typedef struct {
     uint8_t dgain_fine;    // digital gain fine
     uint8_t dgain_coarse;  // digital gain coarse
