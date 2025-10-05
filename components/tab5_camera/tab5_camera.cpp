@@ -644,7 +644,10 @@ static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *fo
                 reg_list = init_reglist_1280x720_30fps;
                 ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps");
                 break;
-            case 2: // 1080P (si disponible)
+            case 2: // UXGA (si disponible)
+                reg_list = init_reglist_1600x1200_30fps;
+                ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps");
+                break;
             case 3: // QVGA (si disponible)
             default:
                 // Par défaut, utiliser 720P
