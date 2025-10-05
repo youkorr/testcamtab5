@@ -1,20 +1,8 @@
-/*
- * SPDX-FileCopyrightText: 2024 Espressif Systems (Shanghai) CO LTD
- *
- * SPDX-License-Identifier: Apache-2.0
- */
+#include "tab5_camera.h"
+#include "esphome/core/log.h"
+#include "esphome/core/application.h"
 
-#include <string.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include "driver/gpio.h"
-#include "esp_err.h"
-#include "esp_log.h"
-
-#include "esp_cam_sensor.h"
-#include "esp_cam_sensor_detect.h"
-#include "sc202cs_settings.h"
-#include "sc202cs.h"
+#ifdef USE_ESP32_VARIANT_ESP32P4
 
 /*
  * SC202CS camera sensor gain control.
