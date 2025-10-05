@@ -25,7 +25,7 @@ class LVGLCameraDisplay : public Component {
   tab5_camera::Tab5Camera *camera_{nullptr};
   lv_obj_t *canvas_obj_{nullptr};
   std::string canvas_id_{};
-  uint32_t update_interval_{33};  // 100ms = 10 FPS
+  uint32_t update_interval_{100};  // 100ms = 10 FPS
   uint32_t last_update_{0};
   
   // Variables pour contrôle des logs
