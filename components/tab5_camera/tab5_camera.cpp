@@ -854,7 +854,50 @@ bool Tab5Camera::init_ldo_() {
   ESP_LOGI(TAG, "✓ LDO OK (2.5V)");
   return true;
 }
-
+bool Tab5Camera::init_csi_() {
+  ESP_LOGI(TAG, "Init MIPI-CSI");
+  
+  CameraResolutionInfo res = this->get_resolution_info_();
+  
+  esp_cam_ctlr_csi_config_t csi_config = {};
+  csi_config.ctlr_id = 0;
+  csi_config.clk_src = MIPI_CSI_PHY_CLK_SRC_DEFAULT;
+  csi_config.h_res = res.width;
+  csi_config.v_res = res.height;
+  csi_config.lane_bit_rate_mbps = 576;
+  csi_config.input_data_color_type = CAM_CTLR_COLOR_RAW8;
+  csi_config.output_data_color_type = CAM_CTLR_COLOR_RGB565;
+  csi_config.data_lane_num = 1;
+  csi_config.byte_swap_en = false;
+  csi_config.queue_items = 3;
+  
+  esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->csi_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "CSI failed: %d", ret);
+    return false;
+  }
+  
+  // Callbacks
+  esp_cam_ctlr_evt_cbs_t callbacks = {
+    .on_get_new_trans = Tab5Camera::on_csi_new_frame_,
+    .on_trans_finished = Tab5Camera::on_csi_frame_done_,
+  };
+  
+  ret = esp_cam_ctlr_register_event_callbacks(this->csi_handle_, &callbacks, this);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Callbacks failed: %d", ret);
+    return false;
+  }
+  
+  ret = esp_cam_ctlr_enable(this->csi_handle_);
+  if (ret != ESP_OK) {
+    ESP_LOGE(TAG, "Enable CSI failed: %d", ret);
+    return false;
+  }
+  
+  ESP_LOGI(TAG, "✓ CSI OK (%ux%u)", res.width, res.height);
+  return true;
+}
 bool Tab5Camera::init_isp_() {
   ESP_LOGI(TAG, "Init ISP");
   
