@@ -24,13 +24,13 @@ CONF_FRAMERATE = "framerate"
 CONF_EXTERNAL_CLOCK_PIN = "external_clock_pin"
 CONF_RESET_PIN = "reset_pin"
 CONF_ADDRESS_SENSOR_SC202CS = "address_sensor_sc202cs"
-#CONF_FLIP_MIRROR = "flip_mirror"
+CONF_FLIP_MIRROR = "flip_mirror"
 
 # Déclarer les enums C++
 CameraResolution = tab5_camera_ns.enum("CameraResolution")
 RESOLUTION_VGA = CameraResolution.RESOLUTION_VGA
 RESOLUTION_720P = CameraResolution.RESOLUTION_720P
-#RESOLUTION_UXGA = CameraResolution.RESOLUTION_UXGA
+RESOLUTION_1080P = CameraResolution.RESOLUTION_1080P
 
 PixelFormat = tab5_camera_ns.enum("PixelFormat")
 PIXEL_FORMAT_RGB565 = PixelFormat.PIXEL_FORMAT_RGB565
@@ -42,7 +42,7 @@ PIXEL_FORMAT_JPEG = PixelFormat.PIXEL_FORMAT_JPEG
 CAMERA_RESOLUTIONS = {
     "VGA": RESOLUTION_VGA,
     "720P": RESOLUTION_720P,
-    #"UXGA": RESOLUTION_UXGA,
+    "1080P": RESOLUTION_1080P,
 }
 
 PIXEL_FORMATS = {
@@ -68,7 +68,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_PIXEL_FORMAT, default="RGB565"): cv.enum(PIXEL_FORMATS, upper=True),
             cv.Optional(CONF_JPEG_QUALITY, default=10): cv.int_range(min=1, max=63),
             cv.Optional(CONF_FRAMERATE, default=30): cv.int_range(min=1, max=60),
-            #cv.Optional(CONF_FLIP_MIRROR, default=False): cv.boolean,
+            cv.Optional(CONF_FLIP_MIRROR, default=False): cv.boolean,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -101,7 +101,7 @@ async def to_code(config):
     cg.add(var.set_framerate(config[CONF_FRAMERATE]))
     
     # Flip/Mirror
-    #cg.add(var.set_flip_mirror(config[CONF_FLIP_MIRROR]))
+    cg.add(var.set_flip_mirror(config[CONF_FLIP_MIRROR]))
     
     if CONF_RESET_PIN in config:
         reset_pin = await cg.gpio_pin_expression(config[CONF_RESET_PIN])
@@ -116,7 +116,6 @@ async def to_code(config):
     cg.add_build_flag("-DCONFIG_CAMERA_SC202CS_MAX_SUPPORT=1")
     cg.add_build_flag("-DCONFIG_CAMERA_SC202CS_MIPI_IF_FORMAT_INDEX_DAFAULT=0")
     cg.add_build_flag("-DUSE_ESP32_VARIANT_ESP32P4")
-
 
 
 
