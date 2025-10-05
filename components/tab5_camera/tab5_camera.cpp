@@ -899,8 +899,6 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)",
              isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
 
-    this->configure_isp_color_correction_();
-
     return true;
 }
 
