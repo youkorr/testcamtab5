@@ -24,7 +24,7 @@ CONF_FRAMERATE = "framerate"
 CONF_EXTERNAL_CLOCK_PIN = "external_clock_pin"
 CONF_RESET_PIN = "reset_pin"
 CONF_ADDRESS_SENSOR_SC202CS = "address_sensor_sc202cs"
-CONF_FLIP_MIRROR = "flip_mirror"
+#CONF_FLIP_MIRROR = "flip_mirror"
 
 # Déclarer les enums C++
 CameraResolution = tab5_camera_ns.enum("CameraResolution")
@@ -68,7 +68,7 @@ CONFIG_SCHEMA = cv.All(
             cv.Optional(CONF_PIXEL_FORMAT, default="RGB565"): cv.enum(PIXEL_FORMATS, upper=True),
             cv.Optional(CONF_JPEG_QUALITY, default=10): cv.int_range(min=1, max=63),
             cv.Optional(CONF_FRAMERATE, default=30): cv.int_range(min=1, max=60),
-            cv.Optional(CONF_FLIP_MIRROR, default=False): cv.boolean,
+            #cv.Optional(CONF_FLIP_MIRROR, default=False): cv.boolean,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
@@ -101,7 +101,7 @@ async def to_code(config):
     cg.add(var.set_framerate(config[CONF_FRAMERATE]))
     
     # Flip/Mirror
-    cg.add(var.set_flip_mirror(config[CONF_FLIP_MIRROR]))
+    #cg.add(var.set_flip_mirror(config[CONF_FLIP_MIRROR]))
     
     if CONF_RESET_PIN in config:
         reset_pin = await cg.gpio_pin_expression(config[CONF_RESET_PIN])
