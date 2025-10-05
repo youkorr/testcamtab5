@@ -826,12 +826,12 @@ bool Tab5Camera::init_sensor_() {
   }
   
   // NOUVEAU: Appliquer flip/mirror si configuré
-  if (this->flip_mirror_) {
-    int enable = 1;
-    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000010, &enable); // VFlip
-    esp_cam_sensor_ioctl(this->sensor_device_, 0x04000011, &enable); // HMirror
-    ESP_LOGI(TAG, "✓ Flip/Mirror activé");
-  }
+  //if (this->flip_mirror_) {
+    //int enable = 1;
+    //esp_cam_sensor_ioctl(this->sensor_device_, 0x04000010, &enable); // VFlip
+    //esp_cam_sensor_ioctl(this->sensor_device_, 0x04000011, &enable); // HMirror
+    //ESP_LOGI(TAG, "✓ Flip/Mirror activé");
+  //}
   
   ESP_LOGI(TAG, "✓ SC202CS détecté (PID: 0x%04X)", this->sensor_device_->id.pid);
   return true;
@@ -1041,7 +1041,7 @@ void Tab5Camera::dump_config() {
   ESP_LOGCONFIG(TAG, "  Résolution: %ux%u", 
                 this->get_image_width(), this->get_image_height());
   ESP_LOGCONFIG(TAG, "  Format: RGB565");
-  ESP_LOGCONFIG(TAG, "  Flip/Mirror: %s", this->flip_mirror_ ? "OUI" : "NON");
+  //ESP_LOGCONFIG(TAG, "  Flip/Mirror: %s", this->flip_mirror_ ? "OUI" : "NON");
   ESP_LOGCONFIG(TAG, "  Streaming: %s", this->streaming_ ? "OUI" : "NON");
   ESP_LOGCONFIG(TAG, "  Initialisé: %s", this->initialized_ ? "OUI" : "NON");
 }
