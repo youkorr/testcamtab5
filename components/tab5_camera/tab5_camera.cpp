@@ -303,7 +303,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
     {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
     // CORRECTION: Binning 2x2 SANS flip/mirror (0x00 au lieu de 0x66)
-    {0x3221, 0x00},  // Binning sans flip/mirror
+    {0x3221, 0x66},  // Binning sans flip/mirror
     {SC202CS_REG_END, 0x00},
 };
 
