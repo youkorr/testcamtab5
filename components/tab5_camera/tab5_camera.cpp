@@ -906,9 +906,9 @@ bool Tab5Camera::init_isp_() {
   CameraResolutionInfo res = this->get_resolution_info_();
   
   // Ajuster la fréquence ISP selon la résolution
-  uint32_t isp_clock_hz = 576000000;
+  uint32_t isp_clock_hz = 80000000;
   if (this->resolution_ == RESOLUTION_720P) {
-    isp_clock_hz = 720000000;
+    isp_clock_hz = 120000000;
   }
   
   esp_isp_processor_cfg_t isp_config = {};
