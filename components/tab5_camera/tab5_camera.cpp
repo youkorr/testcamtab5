@@ -1045,10 +1045,10 @@ bool IRAM_ATTR Tab5Camera::on_csi_frame_done_(
 CameraResolutionInfo Tab5Camera::get_resolution_info_() const {
   switch (this->resolution_) {
     case RESOLUTION_720P: return {1280, 720};
-    //case RESOLUTION_1080P: return {1920, 1080};
+    case RESOLUTION_UXGA: return {1600, 1200};
     //case RESOLUTION_QVGA: return {320, 240};
     case RESOLUTION_VGA:
-    default: return {640, 480};
+    default: return {1280, 720};
   }
 }
 
