@@ -465,17 +465,18 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
 }
 
 static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
-    // Si format est NULL, utiliser la config par défaut depuis dev->priv
-    const sc202cs_reginfo_t *reg_list = NULL;
-    
-    if (format != NULL) {
-        // Format spécifié explicitement
-        const esp_cam_sensor_format_t *fmt = (const esp_cam_sensor_format_t *)format;
-        reg_list = (const sc202cs_reginfo_t *)fmt->regs;
-    } else if (dev->priv != NULL) {
-        // Utiliser la résolution stockée dans priv
-        uint32_t resolution_index = *(uint32_t*)dev->priv;
-        
+    sc202cs_reginfo_t *reg_list = nullptr;
+
+    // Si format est fourni, l'utiliser
+    if (format != nullptr) {
+        const esp_cam_sensor_format_t *fmt = static_cast<const esp_cam_sensor_format_t *>(format);
+        reg_list = fmt->regs;
+        ESP_LOGI(SC202CS_TAG, "Format spécifié explicitement");
+    } 
+    // Sinon, utiliser la résolution stockée dans dev->priv
+    else if (dev->priv != nullptr) {
+        uint32_t resolution_index = *static_cast<uint32_t*>(dev->priv);
+
         switch (resolution_index) {
             case 0: // VGA 640x480
                 reg_list = init_reglist_640x480_30fps;
@@ -485,34 +486,33 @@ static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *fo
                 reg_list = init_reglist_1280x720_30fps;
                 ESP_LOGI(SC202CS_TAG, "Config: 720P 1280x720@30fps");
                 break;
-            case 3: // QVGA (si disponible)
-            default:
-                // Par défaut, utiliser 720P
+            default: // Fallback
                 reg_list = init_reglist_1280x720_30fps;
-                ESP_LOGE(SC202CS_TAG, "Résolution non supportée, utilisation 720P");
+                ESP_LOGW(SC202CS_TAG, "Résolution non supportée, utilisation 720P");
                 break;
         }
-    } else {
-        // Fallback absolu
+    } 
+    // Fallback absolu
+    else {
         reg_list = init_reglist_1280x720_30fps;
         ESP_LOGW(SC202CS_TAG, "Format par défaut: 720P");
     }
-    
-    if (reg_list == NULL) {
+
+    if (!reg_list) {
         ESP_LOGE(SC202CS_TAG, "Liste de registres invalide");
         return ESP_FAIL;
     }
-    
-    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)reg_list);
-    
+
+    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, reg_list);
     if (ret != ESP_OK) {
         ESP_LOGE(SC202CS_TAG, "Set format failed: %d", ret);
         return ret;
     }
-    
+
     ESP_LOGI(SC202CS_TAG, "✓ Format configuré");
     return ESP_OK;
 }
+
 
 
 
