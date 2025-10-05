@@ -855,102 +855,70 @@ bool Tab5Camera::init_ldo_() {
   return true;
 }
 
-bool Tab5Camera::init_csi_() {
-  ESP_LOGI(TAG, "Init MIPI-CSI");
-  
-  CameraResolutionInfo res = this->get_resolution_info_();
-  
-  esp_cam_ctlr_csi_config_t csi_config = {};
-  csi_config.ctlr_id = 0;
-  csi_config.clk_src = MIPI_CSI_PHY_CLK_SRC_DEFAULT;
-  csi_config.h_res = res.width;
-  csi_config.v_res = res.height;
-  csi_config.lane_bit_rate_mbps = 576;
-  csi_config.input_data_color_type = CAM_CTLR_COLOR_RAW8;
-  csi_config.output_data_color_type = CAM_CTLR_COLOR_RGB565;
-  csi_config.data_lane_num = 1;
-  csi_config.byte_swap_en = false;
-  csi_config.queue_items = 3;
-  
-  esp_err_t ret = esp_cam_new_csi_ctlr(&csi_config, &this->csi_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "CSI failed: %d", ret);
-    return false;
-  }
-  
-  // Callbacks
-  esp_cam_ctlr_evt_cbs_t callbacks = {
-    .on_get_new_trans = Tab5Camera::on_csi_new_frame_,
-    .on_trans_finished = Tab5Camera::on_csi_frame_done_,
-  };
-  
-  ret = esp_cam_ctlr_register_event_callbacks(this->csi_handle_, &callbacks, this);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Callbacks failed: %d", ret);
-    return false;
-  }
-  
-  ret = esp_cam_ctlr_enable(this->csi_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Enable CSI failed: %d", ret);
-    return false;
-  }
-  
-  ESP_LOGI(TAG, "✓ CSI OK (%ux%u)", res.width, res.height);
-  return true;
-}
-
 bool Tab5Camera::init_isp_() {
-  ESP_LOGI(TAG, "Initialisation ISP");
-  
-  CameraResolutionInfo res = this->get_resolution_info_();
-  
-  // Ajuster la fréquence ISP selon la résolution
-  uint32_t isp_clock_hz = 80000000;
-  if (this->resolution_ == RESOLUTION_720P) {
-    isp_clock_hz = 120000000;
-  }
-  
-  esp_isp_processor_cfg_t isp_config = {};
-  isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
-  isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
-  isp_config.input_data_color_type = ISP_COLOR_RAW8;
-  isp_config.output_data_color_type = ISP_COLOR_RGB565;
-  isp_config.h_res = res.width;
-  isp_config.v_res = res.height;
-  isp_config.has_line_start_packet = false;
-  isp_config.has_line_end_packet = false;
-  isp_config.clk_hz = isp_clock_hz;
-  
-  // Configuration du pattern Bayer
-  int bayer_pattern = 3;  // RGGB - testez 0, 1, 2, 3
-  
-  isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
-  
-  const char* bayer_names[] = {"RGGB", "GRBG", "GBRG", "BGGR"};
-  ESP_LOGI(TAG, "Pattern Bayer: %s (%d)", bayer_names[bayer_pattern], bayer_pattern);
-  
-  esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Échec création ISP: 0x%x", ret);
-    return false;
-  }
-  
-  ret = esp_isp_enable(this->isp_handle_);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Échec activation ISP: 0x%x", ret);
-    esp_isp_del_processor(this->isp_handle_);
-    this->isp_handle_ = nullptr;
-    return false;
-  }
-  
-  ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)", 
-           isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
-  
-  // Configurer les corrections couleur
-  this->configure_isp_color_correction_();
-  
-  return true;
+    ESP_LOGI(TAG, "Initialisation ISP");
+
+    CameraResolutionInfo res = this->get_resolution_info_();
+
+    // Ajuster la fréquence ISP selon la résolution
+    uint32_t isp_clock_hz = 80000000;
+    if (this->resolution_ == RESOLUTION_720P) {
+        isp_clock_hz = 120000000;
+    }
+
+    esp_isp_processor_cfg_t isp_config = {};
+    isp_config.clk_src = ISP_CLK_SRC_DEFAULT;
+    isp_config.input_data_source = ISP_INPUT_DATA_SOURCE_CSI;
+    isp_config.input_data_color_type = ISP_COLOR_RAW8;
+    isp_config.output_data_color_type = ISP_COLOR_RGB565;
+    isp_config.h_res = res.width;
+    isp_config.v_res = res.height;
+    isp_config.has_line_start_packet = false;
+    isp_config.has_line_end_packet = false;
+    isp_config.clk_hz = isp_clock_hz;
+
+    // Configuration du pattern Bayer
+    int bayer_pattern = 3;  // BGGR, à tester si nécessaire
+    isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
+
+    const char* bayer_names[] = {"RGGB", "GRBG", "GBRG", "BGGR"};
+    ESP_LOGI(TAG, "Pattern Bayer: %s (%d)", bayer_names[bayer_pattern], bayer_pattern);
+
+    esp_err_t ret = esp_isp_new_processor(&isp_config, &this->isp_handle_);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Échec création ISP: 0x%x", ret);
+        return false;
+    }
+
+    ret = esp_isp_enable(this->isp_handle_);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Échec activation ISP: 0x%x", ret);
+        esp_isp_del_processor(this->isp_handle_);
+        this->isp_handle_ = nullptr;
+        return false;
+    }
+
+    ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)",
+             isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
+
+    // ⚡ Configurer la balance des blancs en manuel pour éclaircir l'image
+    esp_isp_wb_gain_t manual_wb;
+    manual_wb.r_gain = 180; // augmenter le rouge
+    manual_wb.g_gain = 160; // augmenter le vert
+    manual_wb.b_gain = 180; // augmenter le bleu
+    esp_isp_set_white_balance(this->isp_handle_, &manual_wb);
+
+    // ⚡ Augmenter légèrement la luminosité globale
+    esp_isp_lum_gain_t lum_gain;
+    lum_gain.y_gain = 200; // 128 = normal, >128 = plus clair
+    esp_isp_set_lum_gain(this->isp_handle_, &lum_gain);
+
+    // Configurer les corrections couleur supplémentaires si nécessaire
+    this->configure_isp_color_correction_();
+
+    ESP_LOGI(TAG, "✓ ISP couleur manuelle appliquée (WB et luminosité ajustées)");
+
+    return true;
 }
 
 void Tab5Camera::configure_isp_color_correction_() {
