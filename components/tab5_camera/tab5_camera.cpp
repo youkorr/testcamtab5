@@ -363,14 +363,6 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     // VTS/HTS pour 30fps
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
     {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
-
-        // === Luminosité améliorée ===
-    {0x3e00, 0x00},          // expo[19:16]
-    {0x3e01, 0x9B},          // expo[15:8]  (double exposition)
-    {0x3e02, 0xC0},          // expo[7:0]
-    {0x3e08, 0x03},          // gain[11:8]
-    {0x3e09, 0x60},          // gain[7:0]  (gain x4 environ)
-    // ============================
     
     {0x3221, 0x00}, 
     {SC202CS_REG_END, 0x00},
@@ -967,10 +959,10 @@ void Tab5Camera::configure_isp_color_correction_() {
   // Corrections couleur de base si supportées
 #ifdef CONFIG_ISP_COLOR_ENABLED
   esp_isp_color_config_t color_config = {};
-  color_config.color_contrast = {128, 128, 128};
-  color_config.color_saturation = {128, 128, 128};
+  color_config.color_contrast = {150, 150, 150};
+  color_config.color_saturation = {140, 140, 140};
   color_config.color_hue = 0;
-  color_config.color_brightness = 5;
+  color_config.color_brightness = 35;
   
   esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret == ESP_OK) {
@@ -1001,10 +993,10 @@ void Tab5Camera::apply_manual_white_balance_() {
   esp_isp_color_config_t color_config = {};
   
   // Réglages manuels pour compensation
-  color_config.color_contrast = {125, 125, 125};
-  color_config.color_saturation = {115, 115, 115};
+  color_config.color_contrast = {145, 145, 145};
+  color_config.color_saturation = {135, 135, 135};
   color_config.color_hue = 0;
-  color_config.color_brightness = 5;
+  color_config.color_brightness = 40;
   
   esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret == ESP_OK) {
