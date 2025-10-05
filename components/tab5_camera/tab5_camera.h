@@ -85,15 +85,11 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
   CameraResolution resolution_{RESOLUTION_VGA};
   PixelFormat pixel_format_{PIXEL_FORMAT_RGB565};
-  uint8_t jpeg_quality_{10};
+  uint8_t jpeg_quality_{20};
   uint8_t framerate_{30};
 
   bool flip_mirror_{false};
 
-  void apply_manual_white_balance_();
-
-  
-  
 
   
   bool initialized_{false};
@@ -116,7 +112,6 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   bool init_csi_();
   bool init_isp_();
   bool allocate_buffer_();
-  void configure_isp_color_correction_();  // Nouvelle fonction
   CameraResolutionInfo get_resolution_info_() const;
   
   static bool IRAM_ATTR on_csi_new_frame_(
