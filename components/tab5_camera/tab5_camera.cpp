@@ -348,18 +348,10 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x3934, 0x02},          {0x3937, 0x6f},
     {0x393a, 0x01},          {0x393d, 0x01},
     {0x393e, 0xc0},          {0x39dd, 0x41},
-
-    // ---- Luminosité améliorée ----
-    {0x3e00, 0x00},  // expo[15:8]
-    {0x3e01, 0x9A},  // expo[7:0]
-    {0x3e02, 0xC0},  // fine expo step
-    {0x3e08, 0x00},  // gain high bits
-    {0x3e09, 0x20},  // gain low bits
-    // ------------------------------
-
+    {0x3e00, 0x00},          {0x3e01, 0x4d},
+    {0x3e02, 0xc0},          {0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
-
-    // Configuration fenêtre 640x480
+    // Configuration directe sans windowing - résolution native
     {0x3200, 0x00},          {0x3201, 0x00},  // Start X = 0
     {0x3202, 0x00},          {0x3203, 0x00},  // Start Y = 0  
     {0x3204, 0x05},          {0x3205, 0x07},  // End X = 1287
@@ -368,14 +360,19 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x320a, 0x01},          {0x320b, 0xe0},  // Height = 480
     {0x3210, 0x00},          {0x3211, 0x04},  // X offset = 4
     {0x3212, 0x00},          {0x3213, 0x02},  // Y offset = 2
-
     // VTS/HTS pour 30fps
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
     {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
 
-    // Orientation correcte (pas de flip)
-    {0x3221, 0x00},
-
+        // === Luminosité améliorée ===
+    {0x3e00, 0x00},          // expo[19:16]
+    {0x3e01, 0x9B},          // expo[15:8]  (double exposition)
+    {0x3e02, 0xC0},          // expo[7:0]
+    {0x3e08, 0x03},          // gain[11:8]
+    {0x3e09, 0x60},          // gain[7:0]  (gain x4 environ)
+    // ============================
+    
+    {0x3221, 0x00}, 
     {SC202CS_REG_END, 0x00},
 };
 
