@@ -22,7 +22,7 @@ namespace tab5_camera {
 enum CameraResolution {
   RESOLUTION_VGA = 0,
   RESOLUTION_720P = 1,
-  RESOLUTION_1080P = 2,
+
 };
 
 enum PixelFormat {
@@ -85,7 +85,7 @@ class Tab5Camera : public Component, public i2c::I2CDevice {
   
   CameraResolution resolution_{RESOLUTION_VGA};
   PixelFormat pixel_format_{PIXEL_FORMAT_RGB565};
-  uint8_t jpeg_quality_{20};
+  uint8_t jpeg_quality_{15};
   uint8_t framerate_{30};
 
   bool flip_mirror_{false};
