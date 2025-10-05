@@ -878,7 +878,7 @@ bool Tab5Camera::init_isp_() {
     isp_config.clk_hz = isp_clock_hz;
 
     // Configuration du pattern Bayer
-    int bayer_pattern = 3;  // BGGR, à tester si nécessaire
+    int bayer_pattern = 0;  // RGGB
     isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
 
     const char* bayer_names[] = {"RGGB", "GRBG", "GBRG", "BGGR"};
@@ -901,79 +901,20 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)",
              isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
 
-    // ⚡ Configurer la balance des blancs en manuel pour éclaircir l'image
-    esp_isp_wb_gain_t manual_wb;
-    manual_wb.r_gain = 180; // augmenter le rouge
-    manual_wb.g_gain = 160; // augmenter le vert
-    manual_wb.b_gain = 180; // augmenter le bleu
-    esp_isp_set_white_balance(this->isp_handle_, &manual_wb);
+    // ⚡ Mode manuel : désactiver AWB
+    this->set_awb_mode_(false);
 
-    // ⚡ Augmenter légèrement la luminosité globale
-    esp_isp_lum_gain_t lum_gain;
-    lum_gain.y_gain = 200; // 128 = normal, >128 = plus clair
-    esp_isp_set_lum_gain(this->isp_handle_, &lum_gain);
+    // ⚡ Régler exposition / gain pour éclaircir l'image
+    this->set_exposure_(5);  // Valeurs typiques 0 = sombre, 10 = très clair (à ajuster selon test)
 
-    // Configurer les corrections couleur supplémentaires si nécessaire
+    // Configurer les corrections couleur restantes si nécessaire
     this->configure_isp_color_correction_();
 
-    ESP_LOGI(TAG, "✓ ISP couleur manuelle appliquée (WB et luminosité ajustées)");
+    ESP_LOGI(TAG, "✓ ISP couleur manuelle appliquée (AWB désactivé, exposition ajustée)");
 
     return true;
 }
 
-void Tab5Camera::configure_isp_color_correction_() {
-  ESP_LOGI(TAG, "Configuration corrections couleur");
-  
-  // Corrections couleur de base si supportées
-#ifdef CONFIG_ISP_COLOR_ENABLED
-  esp_isp_color_config_t color_config = {};
-  color_config.color_contrast = {160, 160, 160};
-  color_config.color_saturation = {140, 140, 140};
-  color_config.color_hue = 0;
-  color_config.color_brightness = 60;
-  
-  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
-  if (ret == ESP_OK) {
-    ESP_LOGI(TAG, "✓ Corrections couleur configurées");
-  }
-#endif
-
-  // Tentative d'activation AWB
-  if (this->sensor_device_) {
-    int awb_value = 1;
-    
-    // Utilisation de la valeur numérique pour AWB
-    esp_err_t ret = esp_cam_sensor_ioctl(this->sensor_device_, 0x03010001, &awb_value);
-    
-    if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ AWB activé");
-    } else {
-      ESP_LOGW(TAG, "AWB non supporté (erreur: 0x%x), utilisation balance manuelle", ret);
-      this->apply_manual_white_balance_();
-    }
-  }
-}
-
-void Tab5Camera::apply_manual_white_balance_() {
-  ESP_LOGI(TAG, "Application balance des blancs manuelle");
-  
-#ifdef CONFIG_ISP_COLOR_ENABLED
-  esp_isp_color_config_t color_config = {};
-  
-  // Réglages manuels pour compensation
-  color_config.color_contrast = {145, 145, 145};
-  color_config.color_saturation = {135, 135, 135};
-  color_config.color_hue = 0;
-  color_config.color_brightness = 40;
-  
-  esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
-  if (ret == ESP_OK) {
-    ESP_LOGI(TAG, "✓ Balance manuelle appliquée");
-  } else {
-    ESP_LOGW(TAG, "Configuration couleur non supportée");
-  }
-#endif
-}
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
   this->frame_buffer_size_ = res.width * res.height * 2;
