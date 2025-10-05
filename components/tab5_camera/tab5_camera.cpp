@@ -860,7 +860,6 @@ bool Tab5Camera::init_isp_() {
 
     CameraResolutionInfo res = this->get_resolution_info_();
 
-    // Ajuster la fréquence ISP selon la résolution
     uint32_t isp_clock_hz = 80000000;
     if (this->resolution_ == RESOLUTION_720P) {
         isp_clock_hz = 120000000;
@@ -877,7 +876,6 @@ bool Tab5Camera::init_isp_() {
     isp_config.has_line_end_packet = false;
     isp_config.clk_hz = isp_clock_hz;
 
-    // Configuration du pattern Bayer
     int bayer_pattern = 0;  // RGGB
     isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
 
@@ -901,16 +899,7 @@ bool Tab5Camera::init_isp_() {
     ESP_LOGI(TAG, "✓ ISP initialisé (clock=%u MHz, bayer=%s)",
              isp_clock_hz / 1000000, bayer_names[bayer_pattern]);
 
-    // ⚡ Mode manuel : désactiver AWB
-    this->set_awb_mode_(false);
-
-    // ⚡ Régler exposition / gain pour éclaircir l'image
-    this->set_exposure_(5);  // Valeurs typiques 0 = sombre, 10 = très clair (à ajuster selon test)
-
-    // Configurer les corrections couleur restantes si nécessaire
     this->configure_isp_color_correction_();
-
-    ESP_LOGI(TAG, "✓ ISP couleur manuelle appliquée (AWB désactivé, exposition ajustée)");
 
     return true;
 }
