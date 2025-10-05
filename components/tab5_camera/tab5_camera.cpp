@@ -292,7 +292,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x4509, 0x28},          {0x450d, 0x61},
     // Configuration directe sans windowing - résolution native
     {0x3200, 0x00},          {0x3201, 0x00},  // Start X = 0
-    {0x3202, 0x00},          {0x3203, 0x00},  // Start Y = 0
+    {0x3202, 0x00},          {0x3203, 0x00},  // Start Y = 0  
     {0x3204, 0x05},          {0x3205, 0x07},  // End X = 1287
     {0x3206, 0x02},          {0x3207, 0xd7},  // End Y = 727
     {0x3208, 0x02},          {0x3209, 0x80},  // Width = 640
@@ -302,10 +302,11 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     // VTS/HTS pour 30fps
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
     {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
-    // CORRECTION: Binning 2x2 SANS flip/mirror (0x00 au lieu de 0x66)
-    {0x3221, 0x66},  // Binning sans flip/mirror
+    
+    {0x3221, 0x00}, 
     {SC202CS_REG_END, 0x00},
 };
+
 
 } // extern "C"
 
