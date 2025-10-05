@@ -464,10 +464,21 @@ static esp_err_t sc202cs_set_stream(esp_cam_sensor_device_t *dev, int enable) {
     return ret;
 }
 
-static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
-    // Écrire la configuration 640x480
-    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)init_reglist_1280x720_30fps);
-    
+static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format)
+{
+    const sc202cs_reginfo_t *reg_list;
+
+    // Déterminer la liste de registres à appliquer en fonction du format
+    if (format == FORMAT_1280x720) {
+        reg_list = init_reglist_1280x720_30fps;
+    } else if (format == FORMAT_640x480) {
+        reg_list = init_reglist_640x480_30fps;
+    } else {
+        ESP_LOGE(SC202CS_TAG, "Unsupported format");
+        return ESP_ERR_INVALID_ARG;
+    }
+
+    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, reg_list);
     if (ret != ESP_OK) {
         ESP_LOGE(SC202CS_TAG, "Set format failed");
         return ret;
@@ -475,16 +486,6 @@ static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *fo
     return ESP_OK;
 }
 
-static esp_err_t sc202cs_set_format(esp_cam_sensor_device_t *dev, const void *format) {
-    // Écrire la configuration 640x480
-    esp_err_t ret = sc202cs_write_array(dev->sccb_handle, (sc202cs_reginfo_t*)init_reglist_640x480_30fps);
-    
-    if (ret != ESP_OK) {
-        ESP_LOGE(SC202CS_TAG, "Set format failed");
-        return ret;
-    }
-    return ESP_OK;
-}
 
 
 static esp_err_t sc202cs_priv_ioctl(esp_cam_sensor_device_t *dev, uint32_t cmd, void *arg) {
