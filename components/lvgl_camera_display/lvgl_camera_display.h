@@ -29,7 +29,7 @@ class LVGLCameraDisplay : public Component {
   std::string canvas_id_{};
 
   // Intervalle pour mise à jour (en ms) ; 33 ms pour ~30 FPS
-  uint32_t update_interval_{33};  // 33ms = 30 FPS
+  uint32_t update_interval_{100};  // 33ms = 30 FPS
   uint32_t last_update_{0};
 
   // Variables pour contrôle des logs et mesure FPS réel
