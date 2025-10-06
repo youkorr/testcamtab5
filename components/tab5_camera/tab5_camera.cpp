@@ -972,21 +972,7 @@ void Tab5Camera::configure_isp_color_correction_() {
   }
 #endif
 
-  // Tentative d'activation AWB
-  if (this->sensor_device_) {
-    int awb_value = 1;
-    
-    // Utilisation de la valeur numérique pour AWB
-    esp_err_t ret = esp_cam_sensor_ioctl(this->sensor_device_, 0x03010001, &awb_value);
-    
-    if (ret == ESP_OK) {
-      ESP_LOGI(TAG, "✓ AWB activé");
-    } else {
-      ESP_LOGW(TAG, "AWB non supporté (erreur: 0x%x), utilisation balance manuelle", ret);
-      this->apply_manual_white_balance_();
-    }
-  }
-}
+
 
 
 bool Tab5Camera::allocate_buffer_() {
