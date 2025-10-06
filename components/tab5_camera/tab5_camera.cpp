@@ -222,7 +222,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {0x393a, 0x01},          {0x393d, 0x01},
     {0x393e, 0xc0},          {0x39dd, 0x41},
     {0x3e00, 0x00},          {0x3e01, 0x4d},//{0x3e00, 0x00},
-    {0x3e02, 0xc0},          {0x3e09, 0x03},//{0x3e09, 0x00},
+    {0x3e02, 0xc0},          {0x3e09, 0x04},//{0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
     {0x450d, 0x61},          {0x320e, 0x04},  // 30FPS{0x320E, 0x04},
     {0x3221, 0x00},          {0x320c, 0x07},
@@ -472,12 +472,16 @@ static esp_err_t sc202cs_set_reg_bits(esp_sccb_io_handle_t handle,
 
 // Fonction pour activer le mirror (flip horizontal)
 static esp_err_t sc202cs_set_mirror(esp_cam_sensor_device_t *dev, int enable) {
-    return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 1, 2, enable ? 0x03 : 0x00);
+    // Registre 0x3221 : bits [2:1] → contrôle du miroir horizontal
+    // 0x00 = normal, 0x01 = miroir horizontal activé
+    return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 1, 2, enable ? 0x01 : 0x00);
 }
 
 // Fonction pour activer le vflip (flip vertical)
 static esp_err_t sc202cs_set_vflip(esp_cam_sensor_device_t *dev, int enable) {
-    return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 5, 2, enable ? 0x03 : 0x00);
+    // Registre 0x3221 : bits [6:5] → contrôle du flip vertical
+    // 0x00 = normal, 0x01 = flip vertical activé
+    return sc202cs_set_reg_bits(dev->sccb_handle, 0x3221, 5, 2, enable ? 0x01 : 0x00);
 }
 
 static esp_err_t sc202cs_get_sensor_id(esp_cam_sensor_device_t *dev, esp_cam_sensor_id_t *id) {
@@ -860,7 +864,7 @@ bool Tab5Camera::init_isp_() {
   isp_config.clk_hz = isp_clock_hz;
   
   // Configuration du pattern Bayer
-  int bayer_pattern = 0;  // RGGB - testez 0, 1, 2, 3
+  int bayer_pattern = 3;  // RGGB - testez 0, 1, 2, 3
   
   isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
   
