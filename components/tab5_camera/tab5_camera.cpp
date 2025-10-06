@@ -860,7 +860,7 @@ bool Tab5Camera::init_isp_() {
   isp_config.clk_hz = isp_clock_hz;
   
   // Configuration du pattern Bayer
-  int bayer_pattern = 3;  // RGGB - testez 0, 1, 2, 3
+  int bayer_pattern = 0;  // RGGB - testez 0, 1, 2, 3
   
   isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
   
