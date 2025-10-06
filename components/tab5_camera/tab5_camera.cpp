@@ -923,7 +923,7 @@ bool Tab5Camera::init_isp_() {
   isp_config.clk_hz = isp_clock_hz;
   
   // Configuration du pattern Bayer
-  int bayer_pattern = 3;  // RGGB - testez 0, 1, 2, 3
+  int bayer_pattern = O;  // RGGB - testez 0, 1, 2, 3
   
   isp_config.bayer_order = (color_raw_element_order_t)bayer_pattern;
   
@@ -962,7 +962,7 @@ void Tab5Camera::configure_isp_color_correction_() {
   color_config.color_contrast = {160, 160, 160};
   color_config.color_saturation = {140, 140, 140};
   color_config.color_hue = 0;
-  color_config.color_brightness = 60;
+  color_config.color_brightness = 100;
   
   esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret == ESP_OK) {
