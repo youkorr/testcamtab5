@@ -157,8 +157,7 @@ typedef struct {
 #define delay_ms(ms) vTaskDelay((ms > portTICK_PERIOD_MS ? ms / portTICK_PERIOD_MS : 1))
 
 
-static esp_err_t sc202cs_set_wb_gains(esp_cam_sensor_device_t *dev,
-                                     uint8_t r, uint8_t g, uint8_t b);
+
 // Configuration 1280x720 RAW8
 // cleaned_0x18_FT_SC2356_24Minput_576Mbps_1lane_8bit_1280x720_30fps
 static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
@@ -989,52 +988,7 @@ void Tab5Camera::configure_isp_color_correction_() {
   }
 }
 
-void Tab5Camera::apply_manual_white_balance_()
-{
-    ESP_LOGI(TAG, "Application balance des blancs manuelle");
 
-    /* ---------- 1️⃣  Gains couleur du capteur ----------
-       Les valeurs suivantes sont un point de départ :
-         - R : légèrement augmenté pour compenser une dominante bleue
-         - G : valeur centrale (neutre)
-         - B : légèrement diminué
-       Vous pouvez les modifier dynamiquement (ex. via un service Home Assistant)
-    */
-    const uint8_t wb_r_gain = 0x90;   // 144 / 255 ≈ +1.1×
-    const uint8_t wb_g_gain = 0x80;   // 128 / 255 (neutre)
-    const uint8_t wb_b_gain = 0x70;   // 112 / 255 ≈ –0.9×
-
-    if (this->sensor_device_) {
-        esp_err_t ret = sc202cs_set_wb_gains(this->sensor_device_,
-                                            wb_r_gain, wb_g_gain, wb_b_gain);
-        if (ret == ESP_OK) {
-            ESP_LOGI(TAG, "✓ WB capteur appliqué R:%02X G:%02X B:%02X",
-                     wb_r_gain, wb_g_gain, wb_b_gain);
-        } else {
-            ESP_LOGW(TAG, "Échec réglage WB capteur (err=0x%04X)", ret);
-        }
-    } else {
-        ESP_LOGW(TAG, "Capteur non initialisé – impossible de régler le WB");
-    }
-
-    /* ---------- 2️⃣  Configuration ISP (conserve votre code existant) ---------- */
-#ifdef CONFIG_ISP_COLOR_ENABLED
-    esp_isp_color_config_t color_config = {};
-
-    // Vous pouvez garder les valeurs actuelles ou les adapter après le WB.
-    color_config.color_contrast   = {145, 145, 145};
-    color_config.color_saturation = {135, 135, 135};
-    color_config.color_hue        = 0;
-    color_config.color_brightness = 40;   // garde la luminosité globale
-
-    esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "✓ Balance ISP manuelle appliquée");
-    } else {
-        ESP_LOGW(TAG, "Configuration couleur ISP non supportée (err=0x%04X)", ret);
-    }
-#endif
-}
 bool Tab5Camera::allocate_buffer_() {
   CameraResolutionInfo res = this->get_resolution_info_();
   this->frame_buffer_size_ = res.width * res.height * 2;
