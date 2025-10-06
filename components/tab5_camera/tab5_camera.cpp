@@ -970,7 +970,7 @@ void Tab5Camera::configure_isp_color_correction_() {
   if (ret == ESP_OK) {
     ESP_LOGI(TAG, "✓ Corrections couleur configurées");
   }
-#endif
+//#endif
 
 
 
