@@ -225,7 +225,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {0x3e02, 0xc0},          {0x3e09, 0x03},//{0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
     {0x450d, 0x61},          {0x320E, 0x04},  // 30FPS
-    {0x3221, 0x00},
+    {0x3221, 0x03},
     {SC202CS_REG_END, 0x00},
 };
 
@@ -301,7 +301,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
     {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
     
-    {0x3221, 0x00}, 
+    {0x3221, 0x02}, 
     {SC202CS_REG_END, 0x00},
 };
 
@@ -899,7 +899,7 @@ void Tab5Camera::configure_isp_color_correction_() {
   color_config.color_contrast = {160, 160, 160};
   color_config.color_saturation = {140, 140, 140};
   color_config.color_hue = 0;
-  color_config.color_brightness = 100;
+  color_config.color_brightness = 60;
   
   esp_err_t ret = esp_isp_color_configure(this->isp_handle_, &color_config);
   if (ret == ESP_OK) {
