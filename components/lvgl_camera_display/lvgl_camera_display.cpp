@@ -17,7 +17,7 @@ void LVGLCameraDisplay::setup() {
   }
 
   // Intervalle pour 30 FPS
-  this->update_interval_ = 33;  // ms
+  this->update_interval_ = 100;  // ms
 
   ESP_LOGI(TAG, "✅ LVGL Camera Display initialisé");
   ESP_LOGI(TAG, "   Update interval: %u ms (~%d FPS)", 
