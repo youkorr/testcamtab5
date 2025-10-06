@@ -156,6 +156,9 @@ typedef struct {
 #endif
 #define delay_ms(ms) vTaskDelay((ms > portTICK_PERIOD_MS ? ms / portTICK_PERIOD_MS : 1))
 
+
+static esp_err_t sc202cs_set_wb_gains(esp_cam_sensor_device_t *dev,
+                                     uint8_t r, uint8_t g, uint8_t b);
 // Configuration 1280x720 RAW8
 // cleaned_0x18_FT_SC2356_24Minput_576Mbps_1lane_8bit_1280x720_30fps
 static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
