@@ -158,7 +158,7 @@ typedef struct {
 
 // Configuration 1280x720 RAW8
 // cleaned_0x18_FT_SC2356_24Minput_576Mbps_1lane_8bit_1280x720_30fps
-static const sc202cs_reginfo_t init_reglist_MIPI_1lane_raw8_1280x720_30fps[] = {
+static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {0x0103, 0x01},          {SC202CS_REG_SLEEP_MODE, 0x00},
     {0x36e9, 0x80},          {0x36ea, 0x06},
     {0x36eb, 0x0a},          {0x36ec, 0x01},
