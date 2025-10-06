@@ -225,7 +225,7 @@ static const sc202cs_reginfo_t init_reglist_1280x720_30fps[] = {
     {0x3e02, 0xc0},          {0x3e09, 0x03},//{0x3e09, 0x00},
     {0x4509, 0x28},          {0x450d, 0x61},
     {0x450d, 0x61},          {0x320E, 0x04},  // 30FPS
-    {0x3221, 0x03},
+    //{0x3221, 0x03},
     {SC202CS_REG_END, 0x00},
 };
 
@@ -301,7 +301,7 @@ static const sc202cs_reginfo_t init_reglist_640x480_30fps[] = {
     {0x320c, 0x07},          {0x320d, 0x80},  // HTS = 1920
     {0x320e, 0x04},          {0x320f, 0xe2},  // VTS = 1250
     
-    {0x3221, 0x02}, 
+    //{0x3221, 0x02}, 
     {SC202CS_REG_END, 0x00},
 };
 
@@ -764,7 +764,7 @@ bool Tab5Camera::init_sensor_() {
   
   // NOUVEAU: Appliquer flip/mirror si configuré
   if (this->flip_mirror_) {
-    int enable = 1;
+    int enable = 0;//int enable = 1;
     esp_cam_sensor_ioctl(this->sensor_device_, 0x04000010, &enable); // VFlip
     esp_cam_sensor_ioctl(this->sensor_device_, 0x04000011, &enable); // HMirror
     ESP_LOGI(TAG, "✓ Flip/Mirror activé");
